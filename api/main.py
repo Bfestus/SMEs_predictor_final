@@ -111,7 +111,7 @@ async def startup_event():
     
     # Load the trained model
     try:
-        model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'sme_success_predictor_xgboost_20251031_075224.joblib')
+        model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'sme_success_predictor_random_forest_20251104_181345.joblib')
         trained_model = joblib.load(model_path)
         print(f"✓ Model loaded successfully from {model_path}")
     except Exception as e:

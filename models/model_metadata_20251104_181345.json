@@ -1,0 +1,91 @@
+{
+    "model_info": {
+        "model_type": "Random Forest",
+        "algorithm": "RandomForestClassifier",
+        "training_timestamp": "20251104_181345",
+        "framework": "scikit-learn",
+        "version": "1.0.0"
+    },
+    "performance_metrics": {
+        "test_accuracy": 0.7555,
+        "test_precision": 0.7807904411764706,
+        "test_recall": 0.7722727272727272,
+        "test_f1_score": 0.776508226691042,
+        "test_roc_auc": 0.8608058080808081
+    },
+    "model_parameters": {
+        "bootstrap": false,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 10,
+        "max_features": "log2",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 10,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 200,
+        "n_jobs": null,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+    },
+    "training_data": {
+        "total_samples": 20000,
+        "training_samples": 12000,
+        "validation_samples": 4000,
+        "test_samples": 4000,
+        "feature_count": 10,
+        "target_distribution": {
+            "success_rate": 55.00000000000001,
+            "fail_rate": -54.00000000000001
+        }
+    },
+    "features": {
+        "selected_features": [
+            "business_capital",
+            "owner_age",
+            "education_level_numeric",
+            "owner_business_experience",
+            "capital_source",
+            "business_sector",
+            "number_of_employees",
+            "business_location",
+            "entity_type",
+            "owner_gender"
+        ],
+        "categorical_features": [
+            "capital_source",
+            "business_sector",
+            "business_location",
+            "entity_type",
+            "owner_gender"
+        ],
+        "numerical_features": [
+            "business_capital",
+            "owner_age",
+            "education_level_numeric",
+            "owner_business_experience",
+            "number_of_employees"
+        ],
+        "feature_scaling": "StandardScaler applied to numerical features",
+        "categorical_encoding": "LabelEncoder applied to categorical features"
+    },
+    "files": {
+        "model_file": "sme_success_predictor_random_forest_20251104_181345.joblib",
+        "scaler_file": "feature_scaler_20251104_181345.joblib",
+        "label_encoders_file": "label_encoders_20251104_181345.joblib",
+        "target_encoder_file": "target_encoder_20251104_181345.joblib"
+    },
+    "business_impact": {
+        "recommended_for_investment": 2176,
+        "success_capture_rate": 0.7722727272727272,
+        "error_rate": 0.2445,
+        "missed_opportunities": 501,
+        "false_positive_investments": 477
+    }
+}
