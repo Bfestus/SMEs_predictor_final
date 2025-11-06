@@ -5,17 +5,32 @@ SME Success Predictor FastAPI Application
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import joblib
 import pandas as pd
 import numpy as np
 import os
+import json
 from datetime import datetime
+import shap
 
 app = FastAPI(
-    title="SME Success Predictor API",
-    description="Predict the success probability of Small and Medium Enterprises (SMEs) in Rwanda",
-    version="1.0.0"
+    title="Combined SME Success Predictor API",
+    description="""
+    Comprehensive SME Success Prediction Platform for Rwanda
+    
+    This API provides predictions for both:
+    
+    **New Business Prediction** - For startups and new business ventures
+    - Uses business fundamentals and owner characteristics
+    - Provides success probability and recommendations
+    
+    **Existing Business Prediction** - For established businesses with historical data  
+    - Uses 4-year performance history
+    - Provides SHAP-based explanations and recommendations
+    - Advanced business insights and risk assessment
+    """,
+    version="2.0.0"
 )
 
 # Configure CORS
@@ -27,10 +42,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variables for model and mappings
+# Global variables for NEW BUSINESS model and mappings
 trained_model = None
 CATEGORICAL_MAPPINGS = None
 PREDICTION_FEATURES = None
+
+# Global variables for EXISTING BUSINESS model components
+xgb_model = None
+feature_scaler = None
+label_encoders = None
+feature_names = None
+model_metadata = None
+
+# Model file paths for existing business
+MODEL_VERSION = "20251106_133503"
+EXISTING_MODEL_PATH = f"../models/existing_business_predictor_{MODEL_VERSION}.joblib"
+EXISTING_SCALER_PATH = f"../models/feature_scaler_{MODEL_VERSION}.joblib"
+EXISTING_ENCODERS_PATH = f"../models/label_encoders_{MODEL_VERSION}.joblib"
+EXISTING_METADATA_PATH = f"../models/model_metadata_{MODEL_VERSION}.json"
 
 @app.on_event("startup")
 async def startup_event():
@@ -111,12 +140,69 @@ async def startup_event():
     
     # Load the trained model
     try:
-        model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'sme_success_predictor_random_forest_20251104_181345.joblib')
+        model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'sme_success_predictor_random_forest_20251105_124414.joblib')
         trained_model = joblib.load(model_path)
-        print(f"✓ Model loaded successfully from {model_path}")
+        print(f"✓ New business model loaded successfully from {model_path}")
     except Exception as e:
-        print(f"Error loading model: {e}")
+        print(f"Error loading new business model: {e}")
         trained_model = None
+    
+    # === LOAD EXISTING BUSINESS MODEL COMPONENTS ===
+    global xgb_model, feature_scaler, label_encoders, feature_names, model_metadata
+    
+    try:
+        # Load XGBoost model
+        if os.path.exists(EXISTING_MODEL_PATH):
+            xgb_model = joblib.load(EXISTING_MODEL_PATH)
+            print(f"✓ Existing business XGBoost model loaded from {EXISTING_MODEL_PATH}")
+        else:
+            print(f"⚠️ Existing business model not found: {EXISTING_MODEL_PATH}")
+        
+        # Load feature scaler
+        if os.path.exists(EXISTING_SCALER_PATH):
+            feature_scaler = joblib.load(EXISTING_SCALER_PATH)
+            print(f"✓ Feature scaler loaded from {EXISTING_SCALER_PATH}")
+        else:
+            print(f"⚠️ Feature scaler not found: {EXISTING_SCALER_PATH}")
+        
+        # Load label encoders
+        if os.path.exists(EXISTING_ENCODERS_PATH):
+            label_encoders = joblib.load(EXISTING_ENCODERS_PATH)
+            print(f"✓ Label encoders loaded from {EXISTING_ENCODERS_PATH}")
+        else:
+            print(f"⚠️ Label encoders not found: {EXISTING_ENCODERS_PATH}")
+        
+        # Load metadata
+        if os.path.exists(EXISTING_METADATA_PATH):
+            with open(EXISTING_METADATA_PATH, 'r') as f:
+                model_metadata = json.load(f)
+            print(f"✓ Model metadata loaded from {EXISTING_METADATA_PATH}")
+        else:
+            print(f"⚠️ Metadata file not found: {EXISTING_METADATA_PATH}")
+        
+        # Define feature names for existing business (must match training order)
+        feature_names = [
+            'turnover_first_year',
+            'turnover_second_year',
+            'turnover_third_year',
+            'turnover_fourth_year',
+            'employment_first_year',
+            'employment_second_year',
+            'employment_third_year',
+            'employment_fourth_year',
+            'revenue_per_employee_trend',
+            'employment_efficiency',
+            'business_capital',
+            'number_of_employees',
+            'business_sector_encoded',
+            'business_scaling_encoded',
+            'employment_growth_encoded'
+        ]
+        
+        print("🎯 Combined SME Predictor API startup complete!")
+        
+    except Exception as e:
+        print(f"Error loading existing business model components: {e}")
 
 # Pydantic models for request/response
 class BusinessData(BaseModel):
@@ -137,8 +223,154 @@ class PredictionResponse(BaseModel):
     prediction_label: Optional[str] = None
     success_probability: Optional[float] = None
     confidence_level: Optional[str] = None
-    recommendations: Optional[Dict[str, Any]] = None
+    recommendations: Optional[List[str]] = None  # Changed to List[str] for SHAP recommendations
     error: Optional[str] = None
+
+# ===== EXISTING BUSINESS DATA MODELS =====
+
+class ExistingBusinessData(BaseModel):
+    """Input model for existing business prediction"""
+    
+    # Business Fundamentals
+    business_capital: float = Field(
+        default=25000000, 
+        description="Business capital amount in RWF", 
+        gt=0,
+        example=25000000
+    )
+    business_sector: str = Field(
+        default="Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles",
+        description="Business sector category",
+        example="Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles"
+    )
+    entity_type: str = Field(
+        default="PRIVATE CORPORATION",
+        description="Business entity type",
+        example="PRIVATE CORPORATION"
+    )
+    business_location: str = Field(
+        default="GASABO",
+        description="Business location (Rwanda district)",
+        example="GASABO"
+    )
+    number_of_employees: int = Field(
+        default=15,
+        description="Current number of employees", 
+        ge=0,
+        example=15
+    )
+    capital_source: str = Field(
+        default="Bank Loan",
+        description="Primary source of capital",
+        example="Bank Loan"
+    )
+    
+    # Historical Performance - Revenue (4 years)
+    turnover_first_year: float = Field(
+        default=12000000,
+        description="Revenue in 1st year of operation (RWF)", 
+        ge=0,
+        example=12000000
+    )
+    turnover_second_year: float = Field(
+        default=18000000,
+        description="Revenue in 2nd year (RWF)", 
+        ge=0,
+        example=18000000
+    )
+    turnover_third_year: float = Field(
+        default=24000000,
+        description="Revenue in 3rd year (RWF)", 
+        ge=0,
+        example=24000000
+    )
+    turnover_fourth_year: float = Field(
+        default=30000000,
+        description="Revenue in 4th year (RWF)", 
+        ge=0,
+        example=30000000
+    )
+    
+    # Historical Performance - Employment (4 years)
+    employment_first_year: int = Field(
+        default=5,
+        description="Number of employees in 1st year", 
+        ge=0,
+        example=5
+    )
+    employment_second_year: int = Field(
+        default=8,
+        description="Number of employees in 2nd year", 
+        ge=0,
+        example=8
+    )
+    employment_third_year: int = Field(
+        default=12,
+        description="Number of employees in 3rd year", 
+        ge=0,
+        example=12
+    )
+    employment_fourth_year: int = Field(
+        default=15,
+        description="Number of employees in 4th year", 
+        ge=0,
+        example=15
+    )
+    
+    # Business Performance Indicators
+    business_scaling: str = Field(
+        default="High_Scaling",
+        description="Business scaling indicator",
+        example="High_Scaling"
+    )
+    employment_growth: str = Field(
+        default="Increased",
+        description="Employment growth pattern",
+        example="Increased"
+    )
+
+class ExistingBusinessPredictionResponse(BaseModel):
+    """Response model for existing business prediction"""
+    success: bool = Field(description="Whether the business is predicted to succeed (True) or fail (False)")
+    prediction: str = Field(description="Human-readable prediction result: 'Success' or 'Failure'")
+    success_probability: float = Field(description="Probability of success (0.0 to 1.0). Values above 0.5 indicate likely success")
+    confidence: float = Field(description="Model confidence in the prediction (0.0 to 1.0). Higher values indicate more certainty")
+    business_insights: Dict[str, Any] = Field(description="Key business metrics and performance indicators")
+    recommendations: List[str] = Field(description="SHAP-based actionable business recommendations")
+    risk_factors: List[str] = Field(description="Identified potential risks that could impact business success")
+    model_version: str = Field(description="Version of the machine learning model used for prediction")
+    timestamp: str = Field(description="ISO timestamp when the prediction was made")
+    
+    model_config = {
+        "protected_namespaces": (),
+        "json_schema_extra": {
+            "example": {
+                "success": True,
+                "prediction": "Success",
+                "success_probability": 0.8745,
+                "confidence": 0.8745,
+                "business_insights": {
+                    "revenue_growth_rate": 25.5,
+                    "employment_growth": "Increased",
+                    "business_scaling": "High_Scaling", 
+                    "employment_efficiency": 1.23,
+                    "revenue_consistency": 0.856,
+                    "current_revenue_per_employee": 2000000,
+                    "capital_efficiency": 1.2
+                },
+                "recommendations": [
+                    "1. Revenue Growth: Continue current growth strategy - performance indicators are strong",
+                    "2. Workforce Management: Maintain current employment efficiency while planning for future needs",
+                    "3. Strategic Scaling: Continue current scaling approach while monitoring key performance indicators",
+                    "4. Capital Utilization: Optimize capital allocation for maximum return on investment",
+                    "5. Market Leadership: Leverage strong performance to explore new markets and strategic partnerships"
+                ],
+                "risk_factors": [],
+                "model_version": "20251106_133503",
+                "timestamp": "2025-11-06T15:30:45.123456"
+            }
+        }
+    }
 
 def preprocess_business_data(data: Dict[str, Any]) -> pd.DataFrame:
     """Preprocess business data for prediction"""
@@ -165,72 +397,223 @@ def preprocess_business_data(data: Dict[str, Any]) -> pd.DataFrame:
     except Exception as e:
         raise ValueError(f"Data preprocessing error: {str(e)}")
 
-def generate_recommendations(business_data: Dict[str, Any], success_probability: float) -> Dict[str, Any]:
-    """Generate business recommendations based on prediction"""
-    recommendations = {
-        "overall_assessment": "",
-        "key_strengths": [],
-        "improvement_areas": [],
-        "action_items": [],
-        "risk_level": ""
+def generate_new_business_recommendations(business_data: Dict[str, Any], success_probability: float, processed_data: pd.DataFrame) -> List[str]:
+    """Generate SHAP-based business recommendations for new business"""
+    
+    try:
+        # Create SHAP explainer for the new business model
+        explainer = shap.TreeExplainer(trained_model)
+        
+        # Calculate SHAP values for this specific prediction
+        shap_values = explainer.shap_values(processed_data)
+        
+        # Handle different SHAP output formats
+        if isinstance(shap_values, list):
+            # Binary classification - use positive class (index 1)
+            shap_vals = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+        else:
+            shap_vals = shap_values[0]
+        
+        # Get feature impacts with names (use PREDICTION_FEATURES order)
+        feature_impacts = list(zip(PREDICTION_FEATURES, shap_vals))
+        
+        # Sort by absolute impact (most influential features first)
+        top_features = sorted(feature_impacts, key=lambda x: abs(x[1]), reverse=True)[:5]
+        
+        recommendations = []
+        
+        # Generate recommendations based on SHAP insights
+        for i, (feature, impact) in enumerate(top_features, 1):
+            feature_name = feature.replace('_', ' ').title()
+            
+            if impact < -0.1:  # Strong negative impact
+                recommendations.append(f"{i}. Improve {feature_name}: This factor is significantly reducing your success probability (Impact: {impact:.3f})")
+            elif impact < 0:  # Mild negative impact
+                recommendations.append(f"{i}. Address {feature_name}: Minor negative influence on success - consider optimization (Impact: {impact:.3f})")
+            elif impact > 0.1:  # Strong positive impact
+                recommendations.append(f"{i}. Leverage {feature_name}: Strong positive driver - maintain and enhance this strength (Impact: +{impact:.3f})")
+            else:  # Mild positive impact
+                recommendations.append(f"{i}. Optimize {feature_name}: Positive contributor - opportunities for further improvement (Impact: +{impact:.3f})")
+        
+        return recommendations
+        
+    except Exception as e:
+        # Fallback to basic recommendations if SHAP fails
+        return [
+            "1. Capital Management: Ensure adequate funding for business operations",
+            "2. Experience Building: Leverage business experience for strategic decisions",
+            "3. Market Position: Strengthen your position in the chosen business sector",
+            "4. Location Strategy: Optimize business location for market access",
+            "5. Growth Planning: Develop sustainable growth strategies for long-term success"
+        ]
+
+# ===== EXISTING BUSINESS HELPER FUNCTIONS =====
+
+def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
+    """Engineer features from existing business input data"""
+    
+    # Calculate revenue growth rate
+    first_year = data.turnover_first_year
+    third_year = data.turnover_third_year
+    
+    if first_year == 0:
+        revenue_growth_rate = 300 if third_year > 0 else 0
+    else:
+        revenue_growth_rate = ((third_year - first_year) / first_year) * 100
+    
+    # Calculate revenue consistency score
+    revenues = [data.turnover_first_year, data.turnover_second_year, data.turnover_third_year]
+    revenue_std = np.std(revenues)
+    revenue_mean = np.mean(revenues)
+    revenue_consistency_score = 1 / (1 + (revenue_std / (revenue_mean + 1)))
+    
+    # Calculate employment efficiency
+    current_revenue_per_employee = data.turnover_fourth_year / max(data.employment_fourth_year, 1)
+    initial_revenue_per_employee = data.turnover_first_year / max(data.employment_first_year, 1)
+    
+    if initial_revenue_per_employee == 0:
+        employment_efficiency = 2.0 if current_revenue_per_employee > 0 else 1.0
+    else:
+        employment_efficiency = current_revenue_per_employee / initial_revenue_per_employee
+    
+    # Calculate capital efficiency
+    total_revenue = data.turnover_first_year + data.turnover_second_year + data.turnover_third_year + data.turnover_fourth_year
+    capital_efficiency = total_revenue / max(data.business_capital, 1)
+    
+    # Calculate revenue per employee trend
+    revenue_per_employee_values = []
+    for i in range(4):
+        year_revenue = [data.turnover_first_year, data.turnover_second_year, data.turnover_third_year, data.turnover_fourth_year][i]
+        year_employment = [data.employment_first_year, data.employment_second_year, data.employment_third_year, data.employment_fourth_year][i]
+        rpe = year_revenue / max(year_employment, 1)
+        revenue_per_employee_values.append(rpe)
+    
+    revenue_per_employee_trend = np.mean(np.diff(revenue_per_employee_values))
+    
+    return {
+        'revenue_growth_rate': revenue_growth_rate,
+        'revenue_consistency_score': revenue_consistency_score,
+        'employment_efficiency': employment_efficiency,
+        'capital_efficiency': capital_efficiency,
+        'current_revenue_per_employee': current_revenue_per_employee,
+        'revenue_per_employee_trend': revenue_per_employee_trend,
+        'employment_growth': data.employment_growth,
+        'business_scaling_indicator': data.business_scaling
+    }
+
+def encode_categorical_features(data: ExistingBusinessData) -> Dict[str, int]:
+    """Encode categorical features for existing business prediction"""
+    
+    # Business sector encoding
+    sector_mapping = {
+        'Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles': 0,
+        'Manufacturing': 1,
+        'Agriculture, Forestry And Fishing': 2,
+        'Information And Communication': 3,
+        'Professional, Scientific And Technical Activities': 4,
+        'Construction': 5,
+        'Transportation And Storage': 6,
+        'Accommodation And Food Service Activities': 7,
+        'Other': 8
     }
     
-    # Determine risk level
-    if success_probability >= 0.7:
-        recommendations["risk_level"] = "Low Risk"
-        recommendations["overall_assessment"] = "Excellent business potential with high success probability."
-    elif success_probability >= 0.5:
-        recommendations["risk_level"] = "Medium Risk" 
-        recommendations["overall_assessment"] = "Good business potential with moderate success probability."
-    elif success_probability >= 0.3:
-        recommendations["risk_level"] = "High Risk"
-        recommendations["overall_assessment"] = "Business faces challenges but has potential for improvement."
-    else:
-        recommendations["risk_level"] = "Very High Risk"
-        recommendations["overall_assessment"] = "Significant challenges identified. Consider major improvements."
+    # Business scaling encoding
+    scaling_mapping = {
+        'High_Scaling': 0,
+        'Mixed_Performance': 1,
+        'Declining': 2
+    }
     
-    # Analyze specific factors
-    capital_rwf = business_data.get('business_capital', 0)
-    owner_age = business_data.get('owner_age', 0)
-    experience = business_data.get('owner_business_experience', 0)
-    employees = business_data.get('number_of_employees', 0)
+    # Employment growth encoding
+    employment_mapping = {
+        'Increased': 0,
+        'Decreased': 1,
+        'No_Change': 2
+    }
     
-    # Capital analysis
-    if capital_rwf >= 2000000:  # 2M RWF
-        recommendations["key_strengths"].append("Strong initial capital investment")
-    elif capital_rwf < 500000:  # 500K RWF
-        recommendations["improvement_areas"].append("Consider increasing initial capital")
-        recommendations["action_items"].append("Explore additional funding sources or microfinance options")
+    encoded = {
+        'business_sector_encoded': sector_mapping.get(data.business_sector, 8),  # Default to 'Other'
+        'business_scaling_encoded': scaling_mapping.get(data.business_scaling, 1),  # Default to Mixed
+        'employment_growth_encoded': employment_mapping.get(data.employment_growth, 2)  # Default to No_Change
+    }
     
-    # Experience analysis
-    if experience >= 10:
-        recommendations["key_strengths"].append("Extensive business experience")
-    elif experience < 3:
-        recommendations["improvement_areas"].append("Limited business experience")
-        recommendations["action_items"].append("Consider mentorship programs or business training")
+    return encoded
+
+def generate_existing_business_recommendations(data: ExistingBusinessData, engineered: Dict, prediction_prob: float, input_features: np.ndarray) -> List[str]:
+    """Generate SHAP-based business recommendations"""
     
-    # Age analysis
-    if 25 <= owner_age <= 45:
-        recommendations["key_strengths"].append("Optimal age range for business leadership")
-    elif owner_age < 25:
-        recommendations["action_items"].append("Consider gaining additional experience or finding a mentor")
+    try:
+        # Create SHAP explainer for the model
+        explainer = shap.TreeExplainer(xgb_model)
+        
+        # Calculate SHAP values for this specific prediction
+        shap_values = explainer.shap_values(input_features.reshape(1, -1))
+        
+        # Get feature impacts with names
+        feature_impacts = list(zip(feature_names, shap_values[0]))
+        
+        # Sort by absolute impact (most influential features first)
+        top_features = sorted(feature_impacts, key=lambda x: abs(x[1]), reverse=True)[:5]
+        
+        recommendations = []
+        
+        # Generate recommendations based on SHAP insights
+        for i, (feature, impact) in enumerate(top_features, 1):
+            feature_name = feature.replace('_', ' ').title()
+            
+            if impact < -0.1:  # Strong negative impact
+                recommendations.append(f"{i}. Improve {feature_name}: This factor is significantly reducing your success probability (Impact: {impact:.3f})")
+            elif impact < 0:  # Mild negative impact
+                recommendations.append(f"{i}. Address {feature_name}: Minor negative influence on success - consider optimization (Impact: {impact:.3f})")
+            elif impact > 0.1:  # Strong positive impact
+                recommendations.append(f"{i}. Leverage {feature_name}: Strong positive driver - maintain and enhance this strength (Impact: +{impact:.3f})")
+            else:  # Mild positive impact
+                recommendations.append(f"{i}. Optimize {feature_name}: Positive contributor - opportunities for further improvement (Impact: +{impact:.3f})")
+        
+        return recommendations
+        
+    except Exception as e:
+        # Fallback to basic recommendations if SHAP fails
+        return [
+            "1. Monitor revenue trends and implement growth strategies",
+            "2. Optimize employment efficiency and productivity",
+            "3. Strengthen financial management practices", 
+            "4. Focus on business scaling indicators",
+            "5. Enhance market positioning and competitiveness"
+        ]
+
+def identify_risk_factors(data: ExistingBusinessData, engineered: Dict) -> List[str]:
+    """Identify potential risk factors"""
     
-    # Employment analysis
-    if employees >= 5:
-        recommendations["key_strengths"].append("Good employment generation potential")
-    elif employees == 0:
-        recommendations["action_items"].append("Plan for gradual employment growth as business scales")
+    risks = []
     
-    # Sector-specific recommendations
-    sector = business_data.get('business_sector', '')
-    if 'Information And Communication' in sector:
-        recommendations["action_items"].append("Focus on digital skills and technology adoption")
-    elif 'Agriculture' in sector:
-        recommendations["action_items"].append("Consider value-addition and modern farming techniques")
-    elif 'Manufacturing' in sector:
-        recommendations["action_items"].append("Focus on quality control and market distribution")
+    # Revenue decline risk
+    if engineered['revenue_growth_rate'] < -10:
+        risks.append("Significant revenue decline detected")
     
-    return recommendations
+    # Employment instability risk
+    if engineered['employment_growth'] == 'Decreased':
+        risks.append("Declining employment trend indicates operational challenges")
+    
+    # Low efficiency risk
+    if engineered['employment_efficiency'] < 0.8:
+        risks.append("Below-average employment efficiency")
+    
+    # Capital efficiency risk
+    if engineered['capital_efficiency'] < 0.5:
+        risks.append("Low capital utilization efficiency")
+    
+    # Business scaling risk
+    if engineered['business_scaling_indicator'] == 'Declining':
+        risks.append("Business showing declining scaling indicators")
+    
+    # Revenue consistency risk
+    if engineered['revenue_consistency_score'] < 0.6:
+        risks.append("Inconsistent revenue patterns detected")
+    
+    return risks
+
+# ===== API ENDPOINTS =====
 
 @app.get("/")
 async def root():
@@ -295,7 +678,7 @@ async def predict_sme_success(business_data: BusinessData):
             confidence_level = "Low"
         
         # Generate recommendations
-        recommendations = generate_recommendations(data_dict, success_probability)
+        recommendations = generate_new_business_recommendations(data_dict, success_probability, processed_data)
         
         return PredictionResponse(
             success=True,
@@ -338,6 +721,148 @@ async def batch_predict(businesses: list[BusinessData]):
     
     return {"predictions": results}
 
+# ===== EXISTING BUSINESS ENDPOINTS =====
+
+@app.post("/predict-existing-business", response_model=ExistingBusinessPredictionResponse, tags=["Existing Business"])
+async def predict_existing_business_success(business_data: ExistingBusinessData):
+    """Predict success probability for existing business with historical data and SHAP-based recommendations"""
+    
+    if xgb_model is None or feature_scaler is None or label_encoders is None:
+        raise HTTPException(status_code=503, detail="Existing business prediction model not loaded")
+    
+    try:
+        # Step 1: Engineer features
+        engineered = engineer_features(business_data)
+        
+        # Step 2: Encode categorical features
+        encoded = encode_categorical_features(business_data)
+        
+        # Step 3: Create feature vector
+        feature_vector = np.array([
+            business_data.turnover_first_year,
+            business_data.turnover_second_year, 
+            business_data.turnover_third_year,
+            business_data.turnover_fourth_year,
+            business_data.employment_first_year,
+            business_data.employment_second_year,
+            business_data.employment_third_year,
+            business_data.employment_fourth_year,
+            engineered['revenue_per_employee_trend'],
+            engineered['employment_efficiency'],
+            business_data.business_capital,
+            business_data.number_of_employees,
+            encoded['business_sector_encoded'],
+            encoded['business_scaling_encoded'],
+            encoded['employment_growth_encoded']
+        ]).reshape(1, -1)
+        
+        # Step 4: Scale features
+        feature_vector_scaled = feature_scaler.transform(feature_vector)
+        
+        # Step 5: Make prediction
+        prediction = xgb_model.predict(feature_vector_scaled)[0]
+        probabilities = xgb_model.predict_proba(feature_vector_scaled)[0]
+        
+        success_probability = probabilities[1]
+        confidence = max(probabilities[0], probabilities[1])
+        prediction_label = "Success" if prediction == 1 else "Failure"
+        
+        # Step 6: Generate insights and recommendations
+        recommendations = generate_existing_business_recommendations(business_data, engineered, success_probability, feature_vector_scaled)
+        risk_factors = identify_risk_factors(business_data, engineered)
+        
+        # Step 7: Prepare business insights
+        business_insights = {
+            "revenue_growth_rate": round(engineered['revenue_growth_rate'], 2),
+            "employment_growth": engineered['employment_growth'],
+            "business_scaling": engineered['business_scaling_indicator'],
+            "employment_efficiency": round(engineered['employment_efficiency'], 3),
+            "revenue_consistency": round(engineered['revenue_consistency_score'], 3),
+            "current_revenue_per_employee": round(engineered['current_revenue_per_employee'], 0),
+            "capital_efficiency": round(engineered['capital_efficiency'], 3)
+        }
+        
+        # Prepare response
+        return ExistingBusinessPredictionResponse(
+            success=bool(prediction),
+            prediction=prediction_label,
+            success_probability=float(success_probability),
+            confidence=float(confidence),
+            business_insights=business_insights,
+            recommendations=recommendations,
+            risk_factors=risk_factors,
+            model_version=model_metadata.get('version', MODEL_VERSION) if model_metadata else MODEL_VERSION,
+            timestamp=datetime.now().isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+@app.get("/health-existing", tags=["Existing Business"])
+async def health_check_existing():
+    """Health check for existing business prediction model"""
+    return {
+        "status": "healthy" if all([xgb_model, feature_scaler, label_encoders]) else "unhealthy",
+        "service": "Existing Business Prediction API", 
+        "model_loaded": xgb_model is not None,
+        "scaler_loaded": feature_scaler is not None,
+        "encoders_loaded": label_encoders is not None,
+        "features": "SHAP-based recommendations enabled",
+        "model_version": MODEL_VERSION,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/sample-new-business", tags=["Samples"])
+async def get_new_business_sample():
+    """Get sample data for new business prediction testing"""
+    return {
+        "sample_data": {
+            "business_capital": 1200000,
+            "owner_age": 30,
+            "owner_business_experience": 7,
+            "capital_source": "Personal Savings",
+            "business_sector": "Manufacturing",
+            "number_of_employees": 0,
+            "business_location": "RULINDO",
+            "entity_type": "COOPERATIVE",
+            "owner_gender": "M",
+            "education_level_numeric": 0
+        },
+        "description": "Sample data for testing new business prediction",
+        "usage": "POST this data to /predict endpoint"
+    }
+
+@app.get("/sample-existing-business", tags=["Samples"])
+async def get_existing_business_sample():
+    """Get sample data for existing business prediction testing"""
+    return {
+        "sample_data": {
+            "business_capital": 25000000,
+            "business_sector": "Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles",
+            "entity_type": "PRIVATE CORPORATION",
+            "business_location": "GASABO",
+            "number_of_employees": 15,
+            "capital_source": "Bank Loan",
+            "turnover_first_year": 12000000,
+            "turnover_second_year": 18000000,
+            "turnover_third_year": 24000000,
+            "turnover_fourth_year": 30000000,
+            "employment_first_year": 5,
+            "employment_second_year": 8,
+            "employment_third_year": 12,
+            "employment_fourth_year": 15,
+            "business_scaling": "High_Scaling",
+            "employment_growth": "Increased"
+        },
+        "description": "Sample data for testing existing business prediction with 4-year historical data",
+        "usage": "POST this data to /predict-existing-business endpoint"
+    }
+
 if __name__ == "__main__":
     import uvicorn
+    print("🚀 Starting Combined SME Predictor API...")
+    print("📊 New Business API: /predict, /batch-predict, /categories")
+    print("📈 Existing Business API: /predict-existing-business, /health-existing")
+    print("📋 Sample Data: /sample-new-business, /sample-existing-business")
+    print("🔗 API Documentation: http://localhost:8000/docs")
     uvicorn.run(app, host="0.0.0.0", port=8000)

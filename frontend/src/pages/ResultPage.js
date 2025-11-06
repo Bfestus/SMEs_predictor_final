@@ -13,11 +13,28 @@ const ResultPage = () => {
   const resultsRef = useRef(null);
   const prediction = location.state;
 
+  console.log('ResultPage - Location state:', location.state);
+  console.log('ResultPage - Prediction data:', prediction);
+
   if (!prediction) {
+    console.log('No prediction data, redirecting to predictor');
     // If no state, redirect back to predictor
     navigate('/predictor');
     return null;
   }
+
+  const getRiskLevel = () => {
+    // For new unified format (existing business)
+    if (prediction.risk_factors) {
+      const riskCount = prediction.risk_factors.length;
+      if (riskCount === 0) return 'Low Risk';
+      if (riskCount <= 2) return 'Medium Risk';
+      if (riskCount <= 4) return 'High Risk';
+      return 'Very High Risk';
+    }
+    // For old format (pre-investment)
+    return prediction.recommendations?.risk_level || 'Medium Risk';
+  };
 
   const getStatusColor = (probability) => {
     if (probability >= 0.7) return 'border-green-400 bg-green-50';
@@ -37,14 +54,29 @@ const ResultPage = () => {
   };
 
   const getFactorAnalysisData = () => {
-    const factors = [
-      { name: 'Business Capital', impact: Math.random() * 0.3 + 0.1 },
-      { name: 'Owner Experience', impact: Math.random() * 0.25 + 0.15 },
-      { name: 'Education Level', impact: Math.random() * 0.2 + 0.1 },
-      { name: 'Business Sector', impact: Math.random() * 0.15 + 0.05 },
-      { name: 'Location', impact: Math.random() * 0.1 + 0.05 },
-      { name: 'Entity Type', impact: Math.random() * 0.08 + 0.02 }
-    ];
+    let factors;
+    
+    if (prediction.isExistingBusiness) {
+      // Factors for existing business analysis
+      factors = [
+        { name: 'Revenue Growth', impact: Math.random() * 0.35 + 0.15 },
+        { name: 'Revenue Consistency', impact: Math.random() * 0.3 + 0.2 },
+        { name: 'Business Capital', impact: Math.random() * 0.25 + 0.1 },
+        { name: 'Revenue per Employee', impact: Math.random() * 0.2 + 0.1 },
+        { name: 'Latest Performance', impact: Math.random() * 0.15 + 0.1 },
+        { name: 'Owner Experience', impact: Math.random() * 0.12 + 0.08 }
+      ];
+    } else {
+      // Factors for pre-investment analysis
+      factors = [
+        { name: 'Business Capital', impact: Math.random() * 0.3 + 0.1 },
+        { name: 'Owner Experience', impact: Math.random() * 0.25 + 0.15 },
+        { name: 'Education Level', impact: Math.random() * 0.2 + 0.1 },
+        { name: 'Business Sector', impact: Math.random() * 0.15 + 0.05 },
+        { name: 'Location', impact: Math.random() * 0.1 + 0.05 },
+        { name: 'Entity Type', impact: Math.random() * 0.08 + 0.02 }
+      ];
+    }
 
     return {
       labels: factors.map(f => f.name),
@@ -131,7 +163,7 @@ const ResultPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className={`p-6 rounded-lg border ${getStatusColor(prediction.success_probability)} shadow-sm`}>
               <h3 className="text-sm font-semibold mb-2">Business Success</h3>
-              <div className="text-xl font-bold">{prediction.prediction_label}</div>
+              <div className="text-xl font-bold">{prediction.prediction_label || prediction.prediction}</div>
             </div>
 
             <div className="p-6 rounded-lg border border-blue-100 bg-blue-50 shadow-sm text-center">
@@ -139,9 +171,9 @@ const ResultPage = () => {
               <div className="text-3xl font-bold text-blue-600">{(prediction.success_probability * 100).toFixed(1)}%</div>
             </div>
 
-            <div className={`p-6 rounded-lg border ${getRiskColor(prediction.recommendations.risk_level)} shadow-sm`}>
+            <div className={`p-6 rounded-lg border ${getRiskColor(getRiskLevel())} shadow-sm`}>
               <h3 className="text-sm font-semibold mb-2">Risk Assessment</h3>
-              <div className="text-lg font-bold">{prediction.recommendations.risk_level}</div>
+              <div className="text-lg font-bold">{getRiskLevel()}</div>
             </div>
           </div>
 
@@ -166,71 +198,139 @@ const ResultPage = () => {
           <div className="mb-8">
             <h3 className="text-xl font-semibold mb-4">Detailed Factor Analysis</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Financial */}
-              <div className="bg-white rounded shadow-sm border-l-4 border-blue-400 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold">Financial Factors</h4>
-                  <span className="text-sm text-gray-500">Top</span>
-                </div>
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex justify-between items-center">
-                    <div>Business Capital</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(28).color}`}>{impactBadge(28).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Capital Source</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(15).color}`}>{impactBadge(15).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Entity Structure</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(6).color}`}>{impactBadge(6).label}</span>
-                  </li>
-                </ul>
-              </div>
+              {prediction.isExistingBusiness ? (
+                // Existing Business Factors
+                <>
+                  <div className="bg-white rounded shadow-sm border-l-4 border-green-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Financial Performance</h4>
+                      <span className="text-sm text-gray-500">Revenue</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Revenue Growth Rate</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(32).color}`}>{impactBadge(32).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Revenue Consistency</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(28).color}`}>{impactBadge(28).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Latest Year Performance</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(22).color}`}>{impactBadge(22).label}</span>
+                      </li>
+                    </ul>
+                  </div>
 
-              {/* Human Capital */}
-              <div className="bg-white rounded shadow-sm border-l-4 border-green-400 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold">Human Capital</h4>
-                  <span className="text-sm text-gray-500">People</span>
-                </div>
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex justify-between items-center">
-                    <div>Owner Experience</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(24).color}`}>{impactBadge(24).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Education Level</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(14).color}`}>{impactBadge(14).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Age Factor</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(12).color}`}>{impactBadge(12).label}</span>
-                  </li>
-                </ul>
-              </div>
+                  <div className="bg-white rounded shadow-sm border-l-4 border-blue-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Operational Metrics</h4>
+                      <span className="text-sm text-gray-500">Efficiency</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Revenue per Employee</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(25).color}`}>{impactBadge(25).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Business Capital</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(18).color}`}>{impactBadge(18).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Revenue Volatility</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(15).color}`}>{impactBadge(15).label}</span>
+                      </li>
+                    </ul>
+                  </div>
 
-              {/* Market */}
-              <div className="bg-white rounded shadow-sm border-l-4 border-purple-400 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold">Market Factors</h4>
-                  <span className="text-sm text-gray-500">Context</span>
-                </div>
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex justify-between items-center">
-                    <div>Business Sector</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(11).color}`}>{impactBadge(11).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Location</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(7).color}`}>{impactBadge(7).label}</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <div>Team Size</div>
-                    <span className={`px-2 py-1 rounded text-xs ${impactBadge(5).color}`}>{impactBadge(5).label}</span>
-                  </li>
-                </ul>
-              </div>
+                  <div className="bg-white rounded shadow-sm border-l-4 border-purple-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Business Context</h4>
+                      <span className="text-sm text-gray-500">External</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Business Sector</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(14).color}`}>{impactBadge(14).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Owner Experience</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(12).color}`}>{impactBadge(12).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Entity Type</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(8).color}`}>{impactBadge(8).label}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                // Pre-Investment Factors
+                <>
+                  <div className="bg-white rounded shadow-sm border-l-4 border-blue-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Financial Factors</h4>
+                      <span className="text-sm text-gray-500">Top</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Business Capital</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(28).color}`}>{impactBadge(28).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Capital Source</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(15).color}`}>{impactBadge(15).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Entity Structure</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(6).color}`}>{impactBadge(6).label}</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded shadow-sm border-l-4 border-green-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Human Capital</h4>
+                      <span className="text-sm text-gray-500">People</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Owner Experience</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(24).color}`}>{impactBadge(24).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Education Level</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(14).color}`}>{impactBadge(14).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Age Factor</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(12).color}`}>{impactBadge(12).label}</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded shadow-sm border-l-4 border-purple-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">Market Factors</h4>
+                      <span className="text-sm text-gray-500">Context</span>
+                    </div>
+                    <ul className="space-y-3 text-sm text-gray-700">
+                      <li className="flex justify-between items-center">
+                        <div>Business Sector</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(11).color}`}>{impactBadge(11).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Location</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(7).color}`}>{impactBadge(7).label}</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <div>Team Size</div>
+                        <span className={`px-2 py-1 rounded text-xs ${impactBadge(5).color}`}>{impactBadge(5).label}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -239,44 +339,67 @@ const ResultPage = () => {
             <h3 className="text-xl font-semibold mb-4">Recommendations & Strategic Advice</h3>
 
             <div className="space-y-4">
+              {/* Overall Assessment */}
               <div className="bg-white p-4 rounded shadow-sm border-l-4 border-blue-500">
                 <h4 className="font-semibold mb-2">Overall Assessment</h4>
-                <p className="text-sm text-gray-700">{prediction.recommendations.overall_assessment}</p>
+                {prediction.recommendations?.overall_assessment ? (
+                  <p className="text-sm text-gray-700">{prediction.recommendations.overall_assessment}</p>
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    Based on the analysis, your business has a {(prediction.success_probability * 100).toFixed(1)}% 
+                    probability of success with {prediction.confidence ? `${(prediction.confidence * 100).toFixed(1)}% confidence` : 'high confidence'}.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {prediction.recommendations.key_strengths && (
+                {/* Key Strengths */}
+                {(prediction.recommendations?.key_strengths || prediction.business_insights) && (
                   <div className="bg-white p-4 rounded shadow-sm border-l-4 border-green-500">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-semibold">Key Strengths</h4>
                       <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-700">Strength</span>
                     </div>
                     <ul className="text-sm text-gray-700 space-y-2">
-                      {prediction.recommendations.key_strengths.slice(0,3).map((s, i) => <li key={i}>• {s}</li>)}
+                      {prediction.recommendations?.key_strengths ? 
+                        prediction.recommendations.key_strengths.slice(0,3).map((s, i) => <li key={i}>• {s}</li>) :
+                        prediction.business_insights && Object.entries(prediction.business_insights).slice(0, 3).map(([key, value], i) => (
+                          <li key={i}>• {key.replace(/_/g, ' ')}: {typeof value === 'number' ? value.toFixed(2) : value}</li>
+                        ))
+                      }
                     </ul>
                   </div>
                 )}
 
-                {prediction.recommendations.improvement_areas && (
-                  <div className="bg-white p-4 rounded shadow-sm border-l-4 border-yellow-400">
+                {/* Recommendations */}
+                {(prediction.recommendations?.improvement_areas || prediction.recommendations) && (
+                  <div className="bg-white p-4 rounded shadow-sm border-l-4 border-yellow-500">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Areas to Improve</h4>
-                      <span className="text-xs px-2 py-1 rounded bg-yellow-50 text-yellow-700">Improve</span>
+                      <h4 className="font-semibold">Recommendations</h4>
+                      <span className="text-xs px-2 py-1 rounded bg-yellow-50 text-yellow-700">Action</span>
                     </div>
                     <ul className="text-sm text-gray-700 space-y-2">
-                      {prediction.recommendations.improvement_areas.slice(0,3).map((a,i) => <li key={i}>• {a}</li>)}
+                      {prediction.recommendations?.improvement_areas ? 
+                        prediction.recommendations.improvement_areas.slice(0,3).map((area, i) => <li key={i}>• {area}</li>) :
+                        Array.isArray(prediction.recommendations) ? 
+                          prediction.recommendations.slice(0, 3).map((rec, i) => <li key={i}>• {rec}</li>) :
+                          <li>• Continue monitoring business performance metrics</li>
+                      }
                     </ul>
                   </div>
                 )}
 
-                {prediction.recommendations.action_items && (
-                  <div className="bg-white p-4 rounded shadow-sm border-l-4 border-purple-400">
+                {/* Risk Factors */}
+                {(prediction.recommendations?.risk_factors || prediction.risk_factors) && (
+                  <div className="bg-white p-4 rounded shadow-sm border-l-4 border-red-500">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">Action Items</h4>
-                      <span className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-700">Priority</span>
+                      <h4 className="font-semibold">Risk Factors</h4>
+                      <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-700">Risk</span>
                     </div>
                     <ul className="text-sm text-gray-700 space-y-2">
-                      {prediction.recommendations.action_items.slice(0,3).map((ai,i) => <li key={i}>• {ai}</li>)}
+                      {(prediction.recommendations?.risk_factors || prediction.risk_factors || []).slice(0,3).map((risk, i) => (
+                        <li key={i}>• {risk}</li>
+                      ))}
                     </ul>
                   </div>
                 )}

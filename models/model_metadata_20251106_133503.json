@@ -1,0 +1,79 @@
+{
+  "model_type": "XGBoost Classifier",
+  "model_version": "existing_business_predictor_20251106_133503",
+  "timestamp": "20251106_133503",
+  "dataset": "sme_final_15k_enhanced.csv",
+  "target_variable": "business_success",
+  "selected_features": [
+    "turnover_first_year",
+    "turnover_second_year",
+    "turnover_third_year",
+    "turnover_fourth_year",
+    "employment_first_year",
+    "employment_second_year",
+    "employment_third_year",
+    "employment_fourth_year",
+    "revenue_per_employee_trend",
+    "employment_efficiency",
+    "business_capital",
+    "number_of_employees",
+    "business_sector_encoded",
+    "entity_type_encoded",
+    "business_scaling_indicator_encoded"
+  ],
+  "feature_count": 15,
+  "training_samples": 12000,
+  "test_samples": 3000,
+  "performance_metrics": {
+    "test_accuracy": 0.9346666666666666,
+    "test_auc": 0.9584458333333333,
+    "cv_accuracy_mean": 0.9315833333333334,
+    "cv_accuracy_std": 0.0025467844649893537,
+    "precision": 0.9773809523809524,
+    "recall": 0.9122222222222223,
+    "f1_score": 0.9436781609195403
+  },
+  "feature_importance": {
+    "turnover_first_year": 0.018884796649217606,
+    "turnover_second_year": 0.013159248977899551,
+    "turnover_third_year": 0.01169483084231615,
+    "turnover_fourth_year": 0.02583467960357666,
+    "employment_first_year": 0.0356111079454422,
+    "employment_second_year": 0.01964457891881466,
+    "employment_third_year": 0.22262851893901825,
+    "employment_fourth_year": 0.40519121289253235,
+    "revenue_per_employee_trend": 0.016493935137987137,
+    "employment_efficiency": 0.020655430853366852,
+    "business_capital": 0.020730197429656982,
+    "number_of_employees": 0.041516099125146866,
+    "business_sector_encoded": 0.011562095955014229,
+    "entity_type_encoded": 0.0174095518887043,
+    "business_scaling_indicator_encoded": 0.11898374557495117
+  },
+  "model_insights": {
+    "strongest_predictor": "employment_fourth_year",
+    "success_rate": 0.6,
+    "key_patterns": [
+      "Employment growth is the strongest success predictor",
+      "High scaling businesses achieve 75.9% success rate",
+      "High capital businesses achieve 97.1% success rate",
+      "Revenue consistency matters less than employment trends"
+    ]
+  },
+  "frontend_fields": [
+    "business_capital",
+    "business_sector",
+    "entity_type",
+    "business_location",
+    "number_of_employees",
+    "capital_source",
+    "turnover_first_year",
+    "turnover_second_year",
+    "turnover_third_year",
+    "turnover_fourth_year",
+    "employment_first_year",
+    "employment_second_year",
+    "employment_third_year",
+    "employment_fourth_year"
+  ]
+}

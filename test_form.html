@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Test Form</title>
+</head>
+<body>
+    <h1>Test Existing Business API</h1>
+    <form id="testForm">
+        <div>
+            <label>Business Capital:</label>
+            <input type="number" id="business_capital" value="500000" required>
+        </div>
+        <div>
+            <label>Number of Employees:</label>
+            <input type="number" id="number_of_employees" value="25" required>
+        </div>
+        <div>
+            <label>First Year Turnover:</label>
+            <input type="number" id="turnover_first_year" value="1200000" required>
+        </div>
+        <div>
+            <label>Second Year Turnover:</label>
+            <input type="number" id="turnover_second_year" value="1350000" required>
+        </div>
+        <div>
+            <label>Third Year Turnover:</label>
+            <input type="number" id="turnover_third_year" value="1500000" required>
+        </div>
+        <div>
+            <label>Fourth Year Turnover:</label>
+            <input type="number" id="turnover_fourth_year" value="1650000" required>
+        </div>
+        <div>
+            <label>Business Sector:</label>
+            <select id="business_sector">
+                <option value="Information And Communication">Information And Communication</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Retail Trade">Retail Trade</option>
+            </select>
+        </div>
+        <div>
+            <label>Entity Type:</label>
+            <select id="entity_type">
+                <option value="LIMITED LIABILITY COMPANY">LIMITED LIABILITY COMPANY</option>
+                <option value="PRIVATE COMPANY LIMITED BY SHARES">PRIVATE COMPANY LIMITED BY SHARES</option>
+            </select>
+        </div>
+        <div>
+            <label>Owner Age:</label>
+            <input type="number" id="owner_age" value="35" required>
+        </div>
+        <div>
+            <label>Owner Business Experience:</label>
+            <input type="number" id="owner_business_experience" value="8" required>
+        </div>
+        <button type="submit">Test Prediction</button>
+    </form>
+
+    <div id="result" style="margin-top: 20px; padding: 20px; border: 1px solid #ccc; display: none;"></div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                business_capital: parseInt(document.getElementById('business_capital').value),
+                number_of_employees: parseInt(document.getElementById('number_of_employees').value),
+                turnover_first_year: parseInt(document.getElementById('turnover_first_year').value),
+                turnover_second_year: parseInt(document.getElementById('turnover_second_year').value),
+                turnover_third_year: parseInt(document.getElementById('turnover_third_year').value),
+                turnover_fourth_year: parseInt(document.getElementById('turnover_fourth_year').value),
+                business_sector: document.getElementById('business_sector').value,
+                entity_type: document.getElementById('entity_type').value,
+                owner_age: parseInt(document.getElementById('owner_age').value),
+                owner_business_experience: parseInt(document.getElementById('owner_business_experience').value)
+            };
+
+            console.log('Sending data:', formData);
+            
+            try {
+                const response = await fetch('http://localhost:8000/predict/existing-business', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                console.log('API Response:', result);
+                
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

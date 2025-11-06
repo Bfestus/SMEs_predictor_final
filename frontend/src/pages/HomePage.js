@@ -111,7 +111,7 @@ const HomePage = () => {
                       fontWeight: 800,
                       letterSpacing: '-0.02em',
                       textShadow: '0 2px 4px rgba(255, 255, 255, 0.8)'
-                    }}>85%</div>
+                    }}>93.5%</div>
                     <div className="text-lg font-medium" style={{
                       color: '#2d2d2d',
                       fontFamily: 'Space Mono, monospace',
@@ -153,264 +153,89 @@ const HomePage = () => {
                       fontWeight: 800,
                       letterSpacing: '-0.02em',
                       textShadow: '0 2px 4px rgba(255, 255, 255, 0.8)'
-                    }}>22</div>
+                    }}>19</div>
                     <div className="text-lg font-medium" style={{
                       color: '#2d2d2d',
                       fontFamily: 'Space Mono, monospace',
                       textShadow: '0 1px 2px rgba(255, 255, 255, 0.5)'
                     }}>Business Sectors</div>
                   </motion.div>
-                  
-                  {/* Subtle background pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div className="absolute top-4 right-4 w-20 h-20 border border-white/30 rounded-full"></div>
-                    <div className="absolute bottom-8 left-4 w-16 h-16 border border-white/30 rounded-full"></div>
-                    <div className="absolute top-1/2 left-2 w-12 h-12 border border-white/30 rounded-full"></div>
-                    <div className="absolute bottom-4 right-8 w-8 h-8 border border-white/30 rounded-full"></div>
-                  </div>
-                  
-                  {/* Animated glow effect */}
-                  <div className="absolute inset-0 rounded-3xl opacity-20 blur-xl -z-10 animate-pulse" style={{
-                    background: 'linear-gradient(135deg, rgba(30, 58, 95, 0.3) 0%, rgba(45, 90, 160, 0.2) 100%)'
-                  }}></div>
-                </div>
-                
-                {/* Floating Elements */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 1.2 }}
-                  className="absolute -top-3 -right-3 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg"
-                  style={{border: '1px solid #e2e8f0'}}
-                >
-                  <span className="text-xs font-bold" style={{
-                    color: 'var(--color-primary)',
-                    fontFamily: 'Space Mono, monospace',
-                    fontWeight: '700'
-                  }}>AI</span>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 1.4 }}
-                  className="absolute -bottom-2 -left-2 bg-white rounded-full w-5 h-5 animate-bounce"
-                  style={{border: '1px solid #e2e8f0'}}
-                />
-                
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 1.6 }}
-                  className="absolute top-1/4 -left-3 bg-white rounded-full w-4 h-4 animate-ping"
-                  style={{border: '1px solid #e2e8f0'}}
-                />
-                
-                {/* Additional floating particles */}
-                <div className="absolute inset-0 -z-20">
-                  {[...Array(8)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ 
-                        opacity: [0, 1, 0],
-                        y: [-20, -40, -60],
-                        x: [0, Math.random() * 20 - 10, Math.random() * 40 - 20]
-                      }}
-                      transition={{
-                        duration: 3,
-                        delay: 2 + i * 0.3,
-                        repeat: Infinity,
-                        repeatDelay: 2
-                      }}
-                      className="absolute w-2 h-2 bg-white rounded-full"
-                      style={{
-                        left: `${10 + i * 10}%`,
-                        bottom: '10%',
-                      }}
-                    />
-                  ))}
                 </div>
               </div>
             </motion.div>
-          </div>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-20 left-10 opacity-10">
-          <motion.div
-            animate={{ y: [-20, 20, -20] }}
-            transition={{ duration: 4, repeat: Infinity }}
-            className="text-6xl text-blue-200"
-          >
-          </motion.div>
-        </div>
-        <div className="absolute bottom-20 right-10 opacity-10">
-          <motion.div
-            animate={{ y: [20, -20, 20] }}
-            transition={{ duration: 5, repeat: Infinity }}
-            className="text-6xl text-blue-200"
-          >
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4" style={{
-              color: '#1a1a1a',
-              fontFamily: 'Space Mono, monospace',
-              fontWeight: 700,
-              letterSpacing: '-0.02em'
-            }}>
-              How It Works
-            </h2>
-            <p className="text-xl max-w-3xl mx-auto" style={{
-              color: '#2d2d2d',
-              fontFamily: 'Space Mono, monospace',
-              fontWeight: 400,
-              lineHeight: 1.7
-            }}>
-              Get your business success prediction in three simple steps
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Enter Business Details',
-                description: 'Provide information about your business capital, sector, location, and owner details.'
-              },
-              {
-                step: '02',
-                title: 'AI Analysis',
-                description: 'Our machine learning model analyzes your data against 10,000+ business records.'
-              },
-              {
-                step: '03',
-                title: 'Get Insights',
-                description: 'Receive success probability, risk assessment, and personalized recommendations.'
-              }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.6, delay: index * 0.2, ease: "easeOut" }}
-                className="card text-center relative group hover:scale-105 transition-transform duration-300"
-                style={{ minHeight: '320px' }}
-              >
-                <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-20 h-20 text-white rounded-full text-2xl font-bold mb-6 shadow-lg" style={{
-                    background: '#4a90e2',
-                    fontFamily: 'Space Mono, monospace'
-                  }}>
-                    {item.step}
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4" style={{
-                    color: '#1a1a1a',
-                    fontFamily: 'Space Mono, monospace',
-                    fontWeight: 700
-                  }}>
-                    {item.title}
-                  </h3>
-                  <p style={{
-                    color: '#2d2d2d',
-                    fontFamily: 'Space Mono, monospace',
-                    fontWeight: 400,
-                    lineHeight: 1.6
-                  }}>
-                    {item.description}
-                  </p>
-                </div>
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-10 left-full w-full z-10">
-                    <div className="flex items-center justify-center">
-                      <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }}></div>
-                      <div className="text-2xl mx-4" style={{ color: 'var(--color-primary)' }}>→</div>
-                      <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }}></div>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20 relative" style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #77509fff 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
-        backgroundSize: '400% 400%',
-        animation: 'gradientShift 15s ease infinite'
+        background: 'rgba(248, 250, 252, 0.9)',
+        backdropFilter: 'blur(10px)'
       }}>
         <div className="absolute inset-0" style={{ 
-          background: 'rgba(240, 248, 255, 0.9)',
+          background: 'rgba(248, 250, 252, 0.95)',
           backdropFilter: 'blur(10px)'
         }}></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-4" style={{
-              color: '#4a90e2',
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6" style={{
+              color: '#1a1a1a',
               fontFamily: 'Space Mono, monospace',
-              fontWeight: 700,
+              fontWeight: 800,
               letterSpacing: '-0.02em'
             }}>
-              Why Choose Our SME Predictor?
+              Why Choose Our Platform?
             </h2>
             <p className="text-xl max-w-3xl mx-auto" style={{
-              color: '#2d2d2d',
+              color: '#4a5568',
               fontFamily: 'Space Mono, monospace',
               fontWeight: 400,
               lineHeight: 1.7
             }}>
-              Our AI-powered platform combines advanced machine learning with deep understanding 
-              of the Rwandan business landscape to provide accurate, actionable insights.
+              Discover the advanced features that make our AI-powered SME prediction platform 
+              the most trusted choice for businesses across Rwanda.
             </p>
           </motion.div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="card text-center group hover:scale-105 transition-transform duration-300"
+                viewport={{ once: true }}
+                className="relative"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 text-white rounded-full mb-4 group-hover:scale-110 transition-transform shadow-lg" style={{
-                  background: '#4a90e2'
+                <div className="h-full p-6 rounded-2xl shadow-lg border transition-all duration-300 hover:shadow-xl hover:scale-105" style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(20px)',
+                  borderColor: 'rgba(255, 255, 255, 0.2)'
                 }}>
-                  <feature.icon size={24} />
+                  <div className="text-4xl mb-4 text-blue-600">
+                    <feature.icon />
+                  </div>
+                  <h3 className="text-xl font-bold mb-4" style={{
+                    color: '#1a1a1a',
+                    fontFamily: 'Space Mono, monospace',
+                    fontWeight: 700
+                  }}>
+                    {feature.title}
+                  </h3>
+                  <p style={{
+                    color: '#4a5568',
+                    fontFamily: 'Space Mono, monospace',
+                    lineHeight: 1.6
+                  }}>
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold mb-3" style={{
-                  color: '#1a1a1a',
-                  fontFamily: 'Space Mono, monospace',
-                  fontWeight: 700
-                }}>
-                  {feature.title}
-                </h3>
-                <p style={{
-                  color: '#2d2d2d',
-                  fontFamily: 'Space Mono, monospace',
-                  fontWeight: 400,
-                  lineHeight: 1.6
-                }}>
-                  {feature.description}
-                </p>
               </motion.div>
             ))}
           </div>
@@ -418,46 +243,98 @@ const HomePage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-20 relative">
+        <div className="absolute inset-0" style={{ 
+          background: 'rgba(240, 248, 255, 0.9)',
+          backdropFilter: 'blur(10px)'
+        }}></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-bold mb-4" style={{
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6" style={{
               color: '#1a1a1a',
               fontFamily: 'Space Mono, monospace',
-              fontWeight: 700,
+              fontWeight: 800,
               letterSpacing: '-0.02em'
             }}>
-              Ready to Predict Your Business Success?
+              Ready to Transform Your Business?
             </h2>
-            <p className="text-xl mb-8 max-w-2xl mx-auto" style={{
-              color: '#2d2d2d',
+            <p className="text-xl mb-10 max-w-3xl mx-auto" style={{
+              color: '#4a5568',
               fontFamily: 'Space Mono, monospace',
               fontWeight: 400,
               lineHeight: 1.7
             }}>
-              Join thousands of Rwandan entrepreneurs who are making data-driven business decisions
+              Join thousands of Rwandan entrepreneurs who have already discovered 
+              their success potential with our AI-powered platform. Start your journey today.
             </p>
-            <Link
-              to="/predictor"
-              className="inline-block font-bold py-4 px-8 rounded-lg transition-colors text-lg shadow-lg"
-              style={{
-                background: '#4a90e2',
-                color: 'white',
-                fontFamily: 'Space Mono, monospace',
-                fontWeight: 700
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#357abd'}
-              onMouseLeave={(e) => e.target.style.background = '#4a90e2'}
-            >
-              Start Your Prediction Now
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/predictor"
+                className="btn-primary text-lg px-8 py-4"
+              >
+                Get Started Now
+              </Link>
+              <Link
+                to="/services"
+                className="btn-secondary text-lg px-8 py-4"
+              >
+                Learn More
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
+
+      {/* Global Styles */}
+      <style jsx>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .btn-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          font-family: 'Space Mono, monospace';
+        }
+        
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-secondary {
+          background: rgba(255, 255, 255, 0.9);
+          color: #333;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.3s ease;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          font-family: 'Space Mono, monospace';
+        }
+        
+        .btn-secondary:hover {
+          background: rgba(255, 255, 255, 1);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+      `}</style>
     </div>
   );
 };
