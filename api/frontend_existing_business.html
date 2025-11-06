@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Existing Business Success Predictor</title>
+    <title>SME Success Predictor - Existing Business Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,8 +13,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
             min-height: 100vh;
             padding: 20px;
         }
@@ -21,523 +23,688 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
+            margin-bottom: 40px;
         }
 
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
+            background: linear-gradient(45deg, #22c55e, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
             font-size: 1.1rem;
-            opacity: 0.9;
+            opacity: 0.8;
         }
 
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            min-height: 600px;
-        }
-
-        .form-section {
-            padding: 30px;
-            background: #f8f9fa;
-            border-right: 1px solid #e9ecef;
-        }
-
-        .results-section {
-            padding: 30px;
-            background: white;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+        .form-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .section-title {
-            font-size: 1.2rem;
-            color: #2c3e50;
-            margin: 25px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
+            color: #22c55e;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .predict-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-group select option {
+            background: #1e293b;
+            color: white;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #22c55e, #10b981);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 600;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
         }
 
-        .predict-btn:hover {
+        .submit-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
         }
 
-        .predict-btn:disabled {
-            opacity: 0.6;
+        .submit-btn:disabled {
+            background: rgba(34, 197, 94, 0.6);
             cursor: not-allowed;
             transform: none;
-        }
-
-        .results-container {
-            display: none;
-        }
-
-        .prediction-result {
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .success {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            color: white;
-        }
-
-        .failure {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            color: white;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .metric-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .metric-label {
-            font-size: 0.9rem;
-            color: #6c757d;
-            margin-bottom: 5px;
-        }
-
-        .metric-value {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .recommendations, .risk-factors {
-            margin: 20px 0;
-        }
-
-        .recommendations h3, .risk-factors h3 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .recommendations ul, .risk-factors ul {
-            list-style: none;
-        }
-
-        .recommendations li {
-            background: #d4edda;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border-left: 4px solid #28a745;
-        }
-
-        .risk-factors li {
-            background: #f8d7da;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border-left: 4px solid #dc3545;
+            box-shadow: none;
         }
 
         .loading {
+            display: none;
             text-align: center;
             padding: 20px;
-            color: #667eea;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #22c55e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .results.success {
+            border-color: #22c55e;
+        }
+
+        .results.failure {
+            border-color: #ef4444;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .results-header h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .success-rate {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .insight-label {
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .insight-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .recommendations {
+            margin-top: 30px;
+        }
+
+        .recommendations h3 {
+            color: #22c55e;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.1);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid #f5c6cb;
+            margin-bottom: 10px;
         }
 
-        @media (max-width: 768px) {
-            .content {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-section {
-                border-right: none;
-                border-bottom: 1px solid #e9ecef;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .error-display {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .error-display h3 {
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+
+        .error-details {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            overflow: auto;
+        }
+
+        .required {
+            color: #ef4444;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
             <h1>🏢 Existing Business Success Predictor</h1>
-            <p>Predict the continued success of your SME using historical performance data</p>
+            <p>AI-powered analysis for your existing business with performance insights</p>
         </div>
-        
-        <div class="content">
-            <div class="form-section">
-                <form id="businessForm">
-                    <div class="section-title">📋 Business Information</div>
-                    
+
+        <!-- Form -->
+        <div class="form-container">
+            <form id="predictionForm">
+                <!-- Business Information Section -->
+                <div class="section-title">
+                    📊 Business Information
+                </div>
+                <div class="form-grid">
                     <div class="form-group">
-                        <label for="business_capital">Business Capital (RWF)</label>
-                        <input type="number" id="business_capital" name="business_capital" value="25000000" required>
+                        <label for="business_capital">Business Capital (RWF) <span class="required">*</span></label>
+                        <input type="number" id="business_capital" name="business_capital" required min="0" placeholder="e.g., 2500000">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="business_sector">Business Sector</label>
-                            <select id="business_sector" name="business_sector" required>
-                                <option value="Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles">Wholesale & Retail Trade</option>
-                                <option value="Other Service Activities">Other Service Activities</option>
-                                <option value="Transportation And Storage">Transportation & Storage</option>
-                                <option value="Financial And Insurance Activities">Financial & Insurance</option>
-                                <option value="Accommodation And Food Service Activities">Accommodation & Food</option>
-                                <option value="Manufacturing">Manufacturing</option>
-                                <option value="Construction">Construction</option>
-                                <option value="Mining And Quarrying">Mining & Quarrying</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="entity_type">Entity Type</label>
-                            <select id="entity_type" name="entity_type" required>
-                                <option value="PRIVATE CORPORATION">Private Corporation</option>
-                                <option value="INDIVIDUAL">Individual</option>
-                                <option value="COOPERATIVE">Cooperative</option>
-                                <option value="JOINT VENTURE">Joint Venture</option>
-                                <option value="LIMITED LIABILITY COMPANY">Limited Liability Company</option>
-                                <option value="PARTNERSHIP">Partnership</option>
-                                <option value="SOLE PROPRIETORSHIP">Sole Proprietorship</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="business_location">Business Location</label>
-                            <select id="business_location" name="business_location" required>
-                                <option value="GASABO">Gasabo</option>
-                                <option value="NYARUGENGE">Nyarugenge</option>
-                                <option value="KICUKIRO">Kicukiro</option>
-                                <option value="HUYE">Huye</option>
-                                <option value="RUBAVU">Rubavu</option>
-                                <option value="MUHANGA">Muhanga</option>
-                                <option value="NYANZA">Nyanza</option>
-                                <option value="RWAMAGANA">Rwamagana</option>
-                                <option value="NGOMA">Ngoma</option>
-                                <option value="KAYONZA">Kayonza</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="number_of_employees">Current Employees</label>
-                            <input type="number" id="number_of_employees" name="number_of_employees" value="15" required>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="capital_source">Capital Source</label>
+                        <label for="number_of_employees">Number of Employees <span class="required">*</span></label>
+                        <input type="number" id="number_of_employees" name="number_of_employees" required min="0" placeholder="e.g., 8">
+                    </div>
+                    <div class="form-group">
+                        <label for="capital_source">Capital Source <span class="required">*</span></label>
                         <select id="capital_source" name="capital_source" required>
-                            <option value="Bank Loan">Bank Loan</option>
+                            <option value="">Select capital source...</option>
                             <option value="Personal Savings">Personal Savings</option>
+                            <option value="Bank Loan">Bank Loan</option>
+                            <option value="Business Partner">Business Partner</option>
+                            <option value="Microfinance">Microfinance</option>
                             <option value="Family/Friends">Family/Friends</option>
                             <option value="Government Grant">Government Grant</option>
-                            <option value="Microfinance">Microfinance</option>
-                            <option value="Business Partner">Business Partner</option>
                             <option value="Foreign Investment">Foreign Investment</option>
-                            <option value="Venture Capital">Venture Capital</option>
+                            <option value="Cooperative">Cooperative</option>
+                            <option value="Private Lender">Private Lender</option>
+                            <option value="NGO/Development Agency">NGO/Development Agency</option>
+                            <option value="Business Incubator">Business Incubator</option>
+                            <option value="Angel Investment">Angel Investment</option>
                         </select>
                     </div>
-                    
-                    <div class="section-title">💰 Revenue History (4 Years)</div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="turnover_first_year">1st Year Revenue (RWF)</label>
-                            <input type="number" id="turnover_first_year" name="turnover_first_year" value="12000000" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="turnover_second_year">2nd Year Revenue (RWF)</label>
-                            <input type="number" id="turnover_second_year" name="turnover_second_year" value="18000000" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="entity_type">Entity Type <span class="required">*</span></label>
+                        <select id="entity_type" name="entity_type" required>
+                            <option value="">Select entity type...</option>
+                            <option value="COOPERATIVE">COOPERATIVE</option>
+                            <option value="COMPANY">COMPANY</option>
+                            <option value="PRIVATE LIMITED COMPANY">PRIVATE LIMITED COMPANY</option>
+                            <option value="PUBLIC LIMITED COMPANY">PUBLIC LIMITED COMPANY</option>
+                            <option value="LIMITED LIABILITY COMPANY">LIMITED LIABILITY COMPANY</option>
+                            <option value="PARTNERSHIP">PARTNERSHIP</option>
+                            <option value="SOLE PROPRIETORSHIP">SOLE PROPRIETORSHIP</option>
+                        </select>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="turnover_third_year">3rd Year Revenue (RWF)</label>
-                            <input type="number" id="turnover_third_year" name="turnover_third_year" value="24000000" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="turnover_fourth_year">4th Year Revenue (RWF)</label>
-                            <input type="number" id="turnover_fourth_year" name="turnover_fourth_year" value="30000000" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="business_sector">Business Sector <span class="required">*</span></label>
+                        <select id="business_sector" name="business_sector" required>
+                            <option value="">Select business sector...</option>
+                            <option value="Agriculture">Agriculture</option>
+                            <option value="Manufacturing">Manufacturing</option>
+                            <option value="Trade">Trade</option>
+                            <option value="Services">Services</option>
+                            <option value="Construction">Construction</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Information and communication">Information and communication</option>
+                            <option value="Financial and insurance">Financial and insurance</option>
+                            <option value="Real estate">Real estate</option>
+                            <option value="Professional and technical">Professional and technical</option>
+                            <option value="Education">Education</option>
+                            <option value="Health">Health</option>
+                            <option value="Arts and entertainment">Arts and entertainment</option>
+                            <option value="Other services">Other services</option>
+                            <option value="Mining">Mining</option>
+                            <option value="Electricity and utilities">Electricity and utilities</option>
+                            <option value="Accommodation and food">Accommodation and food</option>
+                            <option value="Administrative services">Administrative services</option>
+                            <option value="Public administration">Public administration</option>
+                            <option value="Extraterritorial organizations">Extraterritorial organizations</option>
+                            <option value="Households as employers">Households as employers</option>
+                            <option value="Water supply and waste management">Water supply and waste management</option>
+                            <option value="Motorcycle transport">Motorcycle transport</option>
+                            <option value="Activities of Mobile Money Agents">Activities of Mobile Money Agents</option>
+                        </select>
                     </div>
-                    
-                    <div class="section-title">👥 Employment History (4 Years)</div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="employment_first_year">1st Year Employees</label>
-                            <input type="number" id="employment_first_year" name="employment_first_year" value="5" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="employment_second_year">2nd Year Employees</label>
-                            <input type="number" id="employment_second_year" name="employment_second_year" value="8" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="business_location">Business Location (District) <span class="required">*</span></label>
+                        <select id="business_location" name="business_location" required>
+                            <option value="">Select district...</option>
+                            <option value="Kigali">Kigali</option>
+                            <option value="Gasabo">Gasabo</option>
+                            <option value="Kicukiro">Kicukiro</option>
+                            <option value="Nyarugenge">Nyarugenge</option>
+                            <option value="Burera">Burera</option>
+                            <option value="Gakenke">Gakenke</option>
+                            <option value="Gicumbi">Gicumbi</option>
+                            <option value="Musanze">Musanze</option>
+                            <option value="Rulindo">Rulindo</option>
+                            <option value="Gatsibo">Gatsibo</option>
+                            <option value="Kayonza">Kayonza</option>
+                            <option value="Kirehe">Kirehe</option>
+                            <option value="Ngoma">Ngoma</option>
+                            <option value="Nyagatare">Nyagatare</option>
+                            <option value="Rwamagana">Rwamagana</option>
+                            <option value="Bugesera">Bugesera</option>
+                            <option value="Gisagara">Gisagara</option>
+                            <option value="Huye">Huye</option>
+                            <option value="Kamonyi">Kamonyi</option>
+                            <option value="Muhanga">Muhanga</option>
+                            <option value="Nyamagabe">Nyamagabe</option>
+                            <option value="Nyanza">Nyanza</option>
+                            <option value="Nyaruguru">Nyaruguru</option>
+                            <option value="Ruhango">Ruhango</option>
+                            <option value="Karongi">Karongi</option>
+                            <option value="Ngororero">Ngororero</option>
+                            <option value="Nyabihu">Nyabihu</option>
+                            <option value="Rubavu">Rubavu</option>
+                            <option value="Rusizi">Rusizi</option>
+                            <option value="Rutsiro">Rutsiro</option>
+                        </select>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="employment_third_year">3rd Year Employees</label>
-                            <input type="number" id="employment_third_year" name="employment_third_year" value="12" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="employment_fourth_year">4th Year Employees</label>
-                            <input type="number" id="employment_fourth_year" name="employment_fourth_year" value="15" required>
-                        </div>
+                </div>
+
+                <!-- Historical Performance Section -->
+                <div class="section-title">
+                    📈 Historical Performance (4 Years)
+                </div>
+                
+                <div class="section-title" style="font-size: 1.1rem; color: #3b82f6; margin-bottom: 15px;">
+                    💰 Annual Turnover (RWF)
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="turnover_first_year">Year 1 Turnover <span class="required">*</span></label>
+                        <input type="number" id="turnover_first_year" name="turnover_first_year" required min="0" placeholder="e.g., 5000000">
                     </div>
-                    
-                    <button type="submit" class="predict-btn" id="predictBtn">
-                        🔮 Predict Business Success
-                    </button>
-                </form>
+                    <div class="form-group">
+                        <label for="turnover_second_year">Year 2 Turnover <span class="required">*</span></label>
+                        <input type="number" id="turnover_second_year" name="turnover_second_year" required min="0" placeholder="e.g., 6200000">
+                    </div>
+                    <div class="form-group">
+                        <label for="turnover_third_year">Year 3 Turnover <span class="required">*</span></label>
+                        <input type="number" id="turnover_third_year" name="turnover_third_year" required min="0" placeholder="e.g., 7800000">
+                    </div>
+                    <div class="form-group">
+                        <label for="turnover_fourth_year">Year 4 Turnover <span class="required">*</span></label>
+                        <input type="number" id="turnover_fourth_year" name="turnover_fourth_year" required min="0" placeholder="e.g., 9100000">
+                    </div>
+                </div>
+
+                <div class="section-title" style="font-size: 1.1rem; color: #a855f7; margin-bottom: 15px;">
+                    👥 Annual Employment
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="employment_first_year">Year 1 Employees <span class="required">*</span></label>
+                        <input type="number" id="employment_first_year" name="employment_first_year" required min="0" placeholder="e.g., 5">
+                    </div>
+                    <div class="form-group">
+                        <label for="employment_second_year">Year 2 Employees <span class="required">*</span></label>
+                        <input type="number" id="employment_second_year" name="employment_second_year" required min="0" placeholder="e.g., 6">
+                    </div>
+                    <div class="form-group">
+                        <label for="employment_third_year">Year 3 Employees <span class="required">*</span></label>
+                        <input type="number" id="employment_third_year" name="employment_third_year" required min="0" placeholder="e.g., 8">
+                    </div>
+                    <div class="form-group">
+                        <label for="employment_fourth_year">Year 4 Employees <span class="required">*</span></label>
+                        <input type="number" id="employment_fourth_year" name="employment_fourth_year" required min="0" placeholder="e.g., 10">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn" class="submit-btn">
+                    🔮 Analyze Business Performance
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Analyzing your business performance...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results">
+            <div class="results-header">
+                <h2 id="predictionTitle"></h2>
+                <div id="successRate" class="success-rate"></div>
             </div>
-            
-            <div class="results-section">
-                <div id="loadingDiv" class="loading" style="display: none;">
-                    <h3>🔄 Analyzing your business...</h3>
-                    <p>Please wait while we process your data</p>
-                </div>
-                
-                <div id="errorDiv" class="error" style="display: none;"></div>
-                
-                <div id="resultsContainer" class="results-container">
-                    <div id="predictionResult" class="prediction-result">
-                        <h2 id="predictionTitle">📊 Prediction Result</h2>
-                        <p id="predictionText"></p>
-                        <div style="margin-top: 15px;">
-                            <strong>Success Probability: <span id="successProb"></span></strong>
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Revenue Growth Rate</div>
-                            <div class="metric-value" id="revenueGrowth">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Employment Growth</div>
-                            <div class="metric-value" id="employmentGrowth">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Business Scaling</div>
-                            <div class="metric-value" id="businessScaling">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Employment Efficiency</div>
-                            <div class="metric-value" id="employmentEfficiency">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Revenue per Employee</div>
-                            <div class="metric-value" id="revenuePerEmployee">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Capital Efficiency</div>
-                            <div class="metric-value" id="capitalEfficiency">-</div>
-                        </div>
-                    </div>
-                    
-                    <div class="recommendations">
-                        <h3>💡 Recommendations</h3>
-                        <ul id="recommendationsList"></ul>
-                    </div>
-                    
-                    <div class="risk-factors">
-                        <h3>⚠️ Risk Factors</h3>
-                        <ul id="riskFactorsList"></ul>
-                    </div>
-                </div>
+
+            <!-- Business Insights Grid -->
+            <div id="insightsGrid" class="insights-grid"></div>
+
+            <!-- Recommendations -->
+            <div id="recommendationsSection" class="recommendations">
+                <h3>🎯 AI-Powered Recommendations</h3>
+                <div id="recommendationsList"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="resetForm()">🔄 Analyze Another Business</button>
+                <button class="action-btn" onclick="window.print()">🖨️ Print Results</button>
+                <button class="action-btn" onclick="copyResults()">📋 Copy Results</button>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="errorDisplay" class="error-display">
+            <h3>❌ Analysis Error</h3>
+            <p id="errorMessage"></p>
+            <details>
+                <summary style="cursor: pointer; color: #ef4444;">Technical Details</summary>
+                <div id="errorDetails" class="error-details"></div>
+            </details>
+            <div style="margin-top: 15px;">
+                <button class="action-btn" onclick="hideError()">Close</button>
             </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('businessForm').addEventListener('submit', async function(e) {
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Hide previous results/errors
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('errorDisplay').style.display = 'none';
+            
             // Show loading
-            document.getElementById('loadingDiv').style.display = 'block';
-            document.getElementById('errorDiv').style.display = 'none';
-            document.getElementById('resultsContainer').style.display = 'none';
-            document.getElementById('predictBtn').disabled = true;
-            
-            // Collect form data
-            const formData = new FormData(this);
-            const businessData = {};
-            
-            for (let [key, value] of formData.entries()) {
-                // Convert numeric fields
-                if (key.includes('turnover') || key.includes('employment') || key === 'business_capital' || key === 'number_of_employees') {
-                    businessData[key] = parseFloat(value) || 0;
-                } else {
-                    businessData[key] = value;
-                }
-            }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
             
             try {
-                // Make API call
-                const response = await fetch('http://localhost:8000/predict-existing-business', {
+                // Collect form data
+                const formData = new FormData(this);
+                const data = {
+                    business_capital: parseFloat(formData.get('business_capital')),
+                    business_sector: formData.get('business_sector'),
+                    entity_type: formData.get('entity_type'),
+                    business_location: formData.get('business_location'),
+                    number_of_employees: parseInt(formData.get('number_of_employees')),
+                    capital_source: formData.get('capital_source'),
+                    turnover_first_year: parseFloat(formData.get('turnover_first_year')),
+                    turnover_second_year: parseFloat(formData.get('turnover_second_year')),
+                    turnover_third_year: parseFloat(formData.get('turnover_third_year')),
+                    turnover_fourth_year: parseFloat(formData.get('turnover_fourth_year')),
+                    employment_first_year: parseInt(formData.get('employment_first_year')),
+                    employment_second_year: parseInt(formData.get('employment_second_year')),
+                    employment_third_year: parseInt(formData.get('employment_third_year')),
+                    employment_fourth_year: parseInt(formData.get('employment_fourth_year'))
+                };
+                
+                console.log('Sending data to API:', data);
+                
+                // Make API request - using the exact URL from Swagger UI
+                const response = await fetch(`${API_BASE_URL}/predict-existing-business`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify(businessData)
+                    body: JSON.stringify(data)
                 });
                 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
                 const result = await response.json();
-                displayResults(result);
+                console.log('API Response:', result);
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    throw new Error(result.error || result.detail || 'Prediction failed');
+                }
                 
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('errorDiv').textContent = 
-                    'Error making prediction. Please ensure the API is running on http://localhost:8000';
-                document.getElementById('errorDiv').style.display = 'block';
+                console.error('Error details:', error);
+                displayError(error);
             } finally {
-                document.getElementById('loadingDiv').style.display = 'none';
-                document.getElementById('predictBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
             }
         });
         
         function displayResults(result) {
-            // Show results container
-            document.getElementById('resultsContainer').style.display = 'block';
+            const resultsDiv = document.getElementById('results');
+            const predictionTitle = document.getElementById('predictionTitle');
+            const successRate = document.getElementById('successRate');
+            const insightsGrid = document.getElementById('insightsGrid');
+            const recommendationsList = document.getElementById('recommendationsList');
             
-            // Update prediction result
-            const predictionDiv = document.getElementById('predictionResult');
-            const isSuccess = result.success;
-            
-            predictionDiv.className = `prediction-result ${isSuccess ? 'success' : 'failure'}`;
-            
-            document.getElementById('predictionTitle').textContent = 
-                isSuccess ? '✅ Success Predicted!' : '❌ Risk of Failure Detected';
-            
-            document.getElementById('predictionText').textContent = 
-                isSuccess ? 
-                'Your business shows strong indicators for continued success!' :
-                'Your business may face challenges. Review the recommendations below.';
-            
-            document.getElementById('successProb').textContent = 
-                `${(result.success_probability * 100).toFixed(1)}%`;
-            
-            // Update metrics
-            const insights = result.business_insights;
-            document.getElementById('revenueGrowth').textContent = `${insights.revenue_growth_rate}%`;
-            document.getElementById('employmentGrowth').textContent = insights.employment_growth;
-            document.getElementById('businessScaling').textContent = insights.business_scaling.replace('_', ' ');
-            document.getElementById('employmentEfficiency').textContent = insights.employment_efficiency.toFixed(2);
-            document.getElementById('revenuePerEmployee').textContent = 
-                `${(insights.current_revenue_per_employee / 1000000).toFixed(1)}M RWF`;
-            document.getElementById('capitalEfficiency').textContent = 
-                `${(insights.capital_efficiency * 100).toFixed(1)}%`;
-            
-            // Update recommendations
-            const recList = document.getElementById('recommendationsList');
-            recList.innerHTML = '';
-            result.recommendations.forEach(rec => {
-                const li = document.createElement('li');
-                li.textContent = rec;
-                recList.appendChild(li);
-            });
-            
-            // Update risk factors
-            const riskList = document.getElementById('riskFactorsList');
-            riskList.innerHTML = '';
-            if (result.risk_factors.length === 0) {
-                const li = document.createElement('li');
-                li.textContent = 'No significant risk factors identified';
-                li.style.background = '#d4edda';
-                li.style.borderLeft = '4px solid #28a745';
-                riskList.appendChild(li);
+            // Set success/failure styling
+            if (result.prediction === 'Success') {
+                resultsDiv.className = 'results success';
+                predictionTitle.textContent = '🎉 Business Success Prediction';
+                predictionTitle.style.color = '#22c55e';
             } else {
-                result.risk_factors.forEach(risk => {
-                    const li = document.createElement('li');
-                    li.textContent = risk;
-                    riskList.appendChild(li);
-                });
+                resultsDiv.className = 'results failure';
+                predictionTitle.textContent = '⚠️ Business Risk Assessment';
+                predictionTitle.style.color = '#ef4444';
             }
+            
+            // Set success probability
+            successRate.textContent = `${(result.success_probability * 100).toFixed(1)}%`;
+            successRate.style.color = result.prediction === 'Success' ? '#22c55e' : '#ef4444';
+            
+            // Populate business insights
+            if (result.business_insights) {
+                insightsGrid.innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-label">Revenue Growth</div>
+                        <div class="insight-value">${result.business_insights.revenue_growth_rate?.toFixed(1) || 'N/A'}%</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-label">Employment Growth</div>
+                        <div class="insight-value">${result.business_insights.employment_growth || 'N/A'}</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-label">Business Scaling</div>
+                        <div class="insight-value">${result.business_insights.business_scaling || 'N/A'}</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-label">Employment Efficiency</div>
+                        <div class="insight-value">${result.business_insights.employment_efficiency?.toFixed(2) || 'N/A'}</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-label">Revenue per Employee</div>
+                        <div class="insight-value">${result.business_insights.current_revenue_per_employee?.toLocaleString() || 'N/A'} RWF</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-label">Capital Efficiency</div>
+                        <div class="insight-value">${result.business_insights.capital_efficiency?.toFixed(2) || 'N/A'}</div>
+                    </div>
+                `;
+            }
+            
+            // Populate recommendations
+            if (result.recommendations && result.recommendations.length > 0) {
+                recommendationsList.innerHTML = result.recommendations.map(rec => 
+                    `<div class="recommendation-item">${rec}</div>`
+                ).join('');
+            } else {
+                document.getElementById('recommendationsSection').style.display = 'none';
+            }
+            
+            // Show results
+            resultsDiv.style.display = 'block';
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function displayError(error) {
+            const errorDisplay = document.getElementById('errorDisplay');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorDetails = document.getElementById('errorDetails');
+            
+            errorMessage.textContent = error.message || 'An unexpected error occurred during prediction.';
+            
+            // Show technical details
+            errorDetails.textContent = JSON.stringify({
+                error: error.message,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            }, null, 2);
+            
+            errorDisplay.style.display = 'block';
+            errorDisplay.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideError() {
+            document.getElementById('errorDisplay').style.display = 'none';
+        }
+        
+        function resetForm() {
+            document.getElementById('predictionForm').reset();
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('errorDisplay').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function copyResults() {
+            const results = document.getElementById('results');
+            const text = results.innerText;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Results copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('Results copied to clipboard!');
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                alert('Failed to copy results to clipboard.');
+            }
+            
+            document.body.removeChild(textArea);
         }
     </script>
 </body>

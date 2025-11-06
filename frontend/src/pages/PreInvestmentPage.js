@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// Charts and PDF generation are handled on the Result page
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -22,37 +20,31 @@ const PreInvestmentPage = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [predictionResult, setPredictionResult] = useState(null);
+  const [showResults, setShowResults] = useState(false);
+  const [errorDetails, setErrorDetails] = useState(null);
+  const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
   const capitalSources = [
     'Personal Savings', 'Bank Loan', 'Business Partner', 'Microfinance',
     'Family/Friends', 'Government Grant', 'Foreign Investment', 
-    'Venture Capital', 'Crowdfunding', 'Inheritance'
+    'Venture Capital', 'Crowdfunding', 'Inheritance', 'Business Incubator', 'Angel Investment'
   ];
 
   const businessSectors = [
-    'Agriculture, Forestry And Fishing',
-    'Information And Communication',
-    'Manufacturing',
+    'Agriculture, Forestry And Fishing', 'Information And Communication', 'Manufacturing',
     'Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles',
-    'Professional, Scientific And Technical Activities',
-    'Human Health And Social Work Activities',
-    'Education',
-    'Accommodation And Food Service Activities',
-    'Administrative And Support Service Activities',
-    'Construction',
-    'Transportation And Storage',
-    'Financial And Insurance Activities',
-    'Arts, Entertainment And Recreation',
-    'Other Service Activities',
-    'Real Estate Activities',
+    'Professional, Scientific And Technical Activities', 'Human Health And Social Work Activities',
+    'Education', 'Accommodation And Food Service Activities', 'Administrative And Support Service Activities',
+    'Construction', 'Transportation And Storage', 'Financial And Insurance Activities',
+    'Arts, Entertainment And Recreation', 'Other Service Activities', 'Real Estate Activities',
     'Public Administration And Defence; Compulsory Social Security',
-    'Water Supply, Gas And Remediation Services',
-    'Electricity, Gas And Air Conditioning Supply',
-    'Mining And Quarrying',
+    'Water Supply, Gas And Remediation Services', 'Electricity, Gas And Air Conditioning Supply',
+    'Mining And Quarrying', 
     'Activities Of Households As Employers; Undifferentiated Goods- And Services-Producing Activities Of Households For Own Use',
-    'Activities Of Extraterritorial Organizations And Bodies',
-    'Unclassified'
+    'Activities Of Extraterritorial Organizations And Bodies', 'Unclassified',
+    'Motorcycle transport', 'Activities of Mobile Money Agents'
   ];
 
   const businessLocations = [
@@ -63,7 +55,10 @@ const PreInvestmentPage = () => {
     'NYARUGURU', 'RUBAVU', 'RUHANGO', 'RULINDO', 'RUSIZI', 'RUTSIRO', 'RWAMAGANA'
   ];
 
-  const entityTypes = ['INDIVIDUAL', 'PRIVATE CORPORATION', 'COOPERATIVE', 'JOINT VENTURE'];
+  const entityTypes = [
+    'INDIVIDUAL', 'PRIVATE CORPORATION', 'COOPERATIVE', 'JOINT VENTURE',
+    'LIMITED LIABILITY COMPANY', 'PARTNERSHIP', 'SOLE PROPRIETORSHIP'
+  ];
 
   const educationLevels = [
     { value: 0, label: '0 - No formal education' },
@@ -75,37 +70,45 @@ const PreInvestmentPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const resetForm = () => {
     setFormData({
-      business_capital: '',
-      owner_age: '',
-      owner_business_experience: '',
-      capital_source: '',
-      business_sector: '',
-      number_of_employees: '',
-      business_location: '',
-      entity_type: '',
-      owner_gender: '',
-      education_level_numeric: ''
+      business_capital: '', owner_age: '', owner_business_experience: '',
+      capital_source: '', business_sector: '', number_of_employees: '',
+      business_location: '', entity_type: '', owner_gender: '', education_level_numeric: ''
     });
-    // clear any previous state and scroll to top
+    setPredictionResult(null);
+    setShowResults(false);
+    setErrorDetails(null);
+    setShowError(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // PDF and charts are handled on the Result page
+  const copyResults = () => {
+    const resultsText = document.getElementById('results').innerText;
+    navigator.clipboard.writeText(resultsText).then(() => {
+      toast.success('Results copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      toast.error('Failed to copy results');
+    });
+  };
+
+  const hideError = () => {
+    setErrorDetails(null);
+    setShowError(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorDetails(null);
+    setShowError(false);
+    setShowResults(false);
 
     try {
-      // Convert string numbers to integers
       const processedData = {
         ...formData,
         business_capital: parseInt(formData.business_capital),
@@ -115,24 +118,82 @@ const PreInvestmentPage = () => {
         education_level_numeric: parseInt(formData.education_level_numeric)
       };
 
+      console.log('Sending data to API:', processedData);
       const response = await axios.post(`${API_BASE_URL}/predict`, processedData);
+      console.log('API Response:', response.data);
       
       if (response.data.success) {
         toast.success('Prediction completed successfully!');
-        // Navigate to the Result page and pass prediction data
-        navigate('/result', { state: response.data });
+        setPredictionResult(response.data);
+        setShowResults(true);
+        setTimeout(() => {
+          const resultsElement = document.getElementById('prediction-results');
+          if (resultsElement) {
+            resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       } else {
-        toast.error(response.data.error || 'Prediction failed');
+        const errorMessage = response.data.error || response.data.detail || 'Prediction failed';
+        toast.error(errorMessage);
+        setErrorDetails({
+          type: 'API Error',
+          message: errorMessage,
+          response: response.data,
+          timestamp: new Date().toISOString()
+        });
+        setShowError(true);
       }
     } catch (error) {
       console.error('Prediction error:', error);
-      if (error.response?.status === 422) {
-        toast.error('Please check your input data');
-      } else if (error.code === 'ECONNREFUSED') {
-        toast.error('Cannot connect to API. Please ensure the server is running on port 8000.');
+      
+      let errorMessage = 'Failed to get prediction. Please try again.';
+      let errorType = 'Unknown Error';
+      let errorData = {};
+      
+      if (error.response) {
+        errorType = `HTTP ${error.response.status} Error`;
+        errorData = {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        };
+        
+        if (error.response.status === 422) {
+          errorMessage = 'Validation Error: Please check your input data';
+          if (error.response.data?.detail) {
+            if (Array.isArray(error.response.data.detail)) {
+              errorMessage += '\n\nValidation Issues:\n' + 
+                error.response.data.detail.map(item => 
+                  `• ${item.loc?.join('.')} - ${item.msg}`
+                ).join('\n');
+            } else {
+              errorMessage += `\n\nDetails: ${error.response.data.detail}`;
+            }
+          }
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server Error: Internal server error occurred';
+        } else if (error.response.status === 404) {
+          errorMessage = 'API Endpoint Not Found';
+        }
+      } else if (error.request) {
+        errorType = 'Network Error';
+        errorMessage = 'Cannot connect to API server. Please ensure the server is running on port 8000.';
+        errorData = { request: error.request, code: error.code };
       } else {
-        toast.error('Failed to get prediction. Please try again.');
+        errorType = 'Request Setup Error';
+        errorMessage = `Error setting up request: ${error.message}`;
+        errorData = { message: error.message, stack: error.stack };
       }
+      
+      toast.error(errorMessage);
+      setErrorDetails({
+        type: errorType,
+        message: errorMessage,
+        error: errorData,
+        timestamp: new Date().toISOString()
+      });
+      setShowError(true);
     } finally {
       setIsLoading(false);
     }
@@ -141,270 +202,905 @@ const PreInvestmentPage = () => {
   
 
   return (
-    <div className="min-h-screen bg-white py-12" style={{ fontFamily: "'Space Mono', monospace" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div style={{
+      fontFamily: "'Space Mono', monospace",
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      color: 'white',
+      minHeight: '100vh',
+      padding: '20px'
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold mb-4" style={{ color: '#1a1a1a', fontFamily: "'Space Mono', monospace" }}>
-            <span style={{ color: '#4a90e2' }}>SME Success</span> Predictor
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            marginBottom: '10px',
+            background: 'linear-gradient(45deg, #22c55e, #10b981)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            Pre-Investment Success Predictor
           </h1>
-          <p className="text-xl max-w-3xl mx-auto" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-            Enter your business details below to get an AI-powered prediction of your success probability,
-            along with personalized recommendations for improvement.
+          <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
+            AI-powered analysis for your business idea with personalized recommendations
           </p>
-        </motion.div>
+        </div>
 
-        {/* Form Section */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12"
-        >
-          <div 
-            className="card relative overflow-hidden"
+        {/* Form Container */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '20px',
+          padding: '40px',
+          marginBottom: '30px',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <form onSubmit={handleSubmit}>
+            {/* Business Information Section */}
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{
+                color: '#22c55e',
+                marginBottom: '20px',
+                fontSize: '1.3rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                Business Information
+              </h3>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '20px'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Business Capital (RWF) *
+                  </label>
+                  <input
+                    type="number"
+                    name="business_capital"
+                    value={formData.business_capital}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    placeholder="e.g., 1200000"
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Number of Employees *
+                  </label>
+                  <input
+                    type="number"
+                    name="number_of_employees"
+                    value={formData.number_of_employees}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    placeholder="e.g., 5"
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Capital Source *
+                  </label>
+                  <select
+                    name="capital_source"
+                    value={formData.capital_source}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select capital source...</option>
+                    {capitalSources.map(source => (
+                      <option key={source} value={source} style={{ background: '#1e293b', color: 'white' }}>
+                        {source}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Entity Type *
+                  </label>
+                  <select
+                    name="entity_type"
+                    value={formData.entity_type}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select entity type...</option>
+                    {entityTypes.map(type => (
+                      <option key={type} value={type} style={{ background: '#1e293b', color: 'white' }}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '20px',
+                marginTop: '20px'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Business Sector *
+                  </label>
+                  <select
+                    name="business_sector"
+                    value={formData.business_sector}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select business sector...</option>
+                    {businessSectors.map(sector => (
+                      <option key={sector} value={sector} style={{ background: '#1e293b', color: 'white' }}>
+                        {sector}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Business Location (District) *
+                  </label>
+                  <select
+                    name="business_location"
+                    value={formData.business_location}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select district...</option>
+                    {businessLocations.map(location => (
+                      <option key={location} value={location} style={{ background: '#1e293b', color: 'white' }}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Owner Information Section */}
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{
+                color: '#22c55e',
+                marginBottom: '20px',
+                fontSize: '1.3rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                Owner Information
+              </h3>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '20px'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Owner Age *
+                  </label>
+                  <input
+                    type="number"
+                    name="owner_age"
+                    value={formData.owner_age}
+                    onChange={handleInputChange}
+                    required
+                    min="18"
+                    max="80"
+                    placeholder="e.g., 35"
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Business Experience (Years) *
+                  </label>
+                  <input
+                    type="number"
+                    name="owner_business_experience"
+                    value={formData.owner_business_experience}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    max="50"
+                    placeholder="e.g., 5"
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Owner Gender *
+                  </label>
+                  <select
+                    name="owner_gender"
+                    value={formData.owner_gender}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="M" style={{ background: '#1e293b', color: 'white' }}>Male</option>
+                    <option value="F" style={{ background: '#1e293b', color: 'white' }}>Female</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    Education Level *
+                  </label>
+                  <select
+                    name="education_level_numeric"
+                    value={formData.education_level_numeric}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      padding: '12px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select education level...</option>
+                    {educationLevels.map(level => (
+                      <option key={level.value} value={level.value} style={{ background: '#1e293b', color: 'white' }}>
+                        {level.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                background: isLoading ? 'rgba(34, 197, 94, 0.6)' : 'linear-gradient(45deg, #22c55e, #10b981)',
+                color: 'white',
+                border: 'none',
+                padding: '16px 32px',
+                borderRadius: '10px',
+                fontFamily: "'Space Mono', monospace",
+                fontSize: '1.1rem',
+                fontWeight: '700',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                width: '100%',
+                maxWidth: '400px',
+                margin: '20px auto',
+                display: 'block',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                if (!isLoading) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 10px 25px rgba(34, 197, 94, 0.3)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!isLoading) {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {isLoading ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <div style={{
+                    border: '4px solid rgba(255, 255, 255, 0.3)',
+                    borderTop: '4px solid #22c55e',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  Analyzing your business idea...
+                </span>
+              ) : (
+                'Get Success Prediction & Recommendations'
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Results Section */}
+        {showResults && predictionResult && (
+          <div
+            id="prediction-results"
             style={{
-              background: 'linear-gradient(180deg, #072033 0%, #0b2740 100%)',
-              color: 'white'
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              padding: '40px',
+              marginTop: '30px',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
             }}
           >
-            <div className="absolute inset-0" style={{ background: 'rgba(3, 10, 18, 0.45)' }}></div>
-            <div className="relative z-10">
-              <h2 className="text-3xl font-semibold mb-8 text-center" style={{ color: '#e6f0ff', fontFamily: "'Space Mono', monospace" }}>
-                Business Information Form
-              </h2>
-            
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Business Information Section */}
-                <div className="bg-white/70 rounded-lg p-6 backdrop-blur-sm">
-                  <h3 className="text-xl font-semibold mb-6" style={{ color: '#a8d0ff', fontFamily: "'Space Mono', monospace" }}>
-                    Business Information
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Business Capital (RWF) *
-                      </label>
-                      <input
-                        type="number"
-                        name="business_capital"
-                        value={formData.business_capital}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 1200000"
-                        className="form-input"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                        min="0"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Number of Employees *
-                      </label>
-                      <input
-                        type="number"
-                        name="number_of_employees"
-                        value={formData.number_of_employees}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 5"
-                        className="form-input"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                        min="0"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Capital Source *
-                      </label>
-                      <select
-                        name="capital_source"
-                        value={formData.capital_source}
-                        onChange={handleInputChange}
-                        className="form-select"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                      >
-                        <option value="">Select capital source...</option>
-                        {capitalSources.map(source => (
-                          <option key={source} value={source}>{source}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Entity Type *
-                      </label>
-                      <select
-                        name="entity_type"
-                        value={formData.entity_type}
-                        onChange={handleInputChange}
-                        className="form-select"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                      >
-                        <option value="">Select entity type...</option>
-                        {entityTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                      Business Sector *
-                    </label>
-                    <select
-                      name="business_sector"
-                      value={formData.business_sector}
-                      onChange={handleInputChange}
-                      className="form-select"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                      required
-                    >
-                      <option value="">Select business sector...</option>
-                      {businessSectors.map(sector => (
-                        <option key={sector} value={sector}>{sector}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                      Business Location (District) *
-                    </label>
-                    <select
-                      name="business_location"
-                      value={formData.business_location}
-                      onChange={handleInputChange}
-                      className="form-select"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                      required
-                    >
-                      <option value="">Select district...</option>
-                      {businessLocations.map(location => (
-                        <option key={location} value={location}>{location}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+            {/* Report Header */}
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <h1 style={{
+                fontSize: '2.5rem',
+                marginBottom: '10px',
+                background: 'linear-gradient(45deg, #22c55e, #10b981)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                SME Success Prediction Report
+              </h1>
+              <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
+                Comprehensive AI-powered business analysis with strategic recommendations
+              </p>
+            </div>
 
-                {/* Owner Information Section */}
-                <div className="bg-white/70 rounded-lg p-6 backdrop-blur-sm">
-                  <h3 className="text-xl font-semibold mb-6 flex items-center" style={{ color: '#4a90e2', fontFamily: "'Space Mono', monospace" }}>
-                    <span className="mr-2">👤</span> Owner Information
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Owner Age *
-                      </label>
-                      <input
-                        type="number"
-                        name="owner_age"
-                        value={formData.owner_age}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 30"
-                        className="form-input"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                        min="18"
-                        max="80"
-                      />
+            {/* Main Results Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '20px',
+              marginBottom: '40px'
+            }}>
+              <div style={{
+                background: predictionResult.prediction === 'Success' 
+                  ? 'rgba(34, 197, 94, 0.2)' 
+                  : 'rgba(239, 68, 68, 0.2)',
+                border: `2px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`,
+                borderRadius: '15px',
+                padding: '25px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Business Success</div>
+                <div style={{
+                  fontSize: '2rem',
+                  fontWeight: '700',
+                  color: predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'
+                }}>
+                  {predictionResult.prediction}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.2)',
+                border: '2px solid #3b82f6',
+                borderRadius: '15px',
+                padding: '25px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Success Rate</div>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: '700',
+                  color: '#3b82f6'
+                }}>
+                  {(predictionResult.success_probability * 100).toFixed(1)}%
+                </div>
+              </div>
+
+              <div style={{
+                background: predictionResult.risk_level === 'Low Risk' 
+                  ? 'rgba(34, 197, 94, 0.2)' 
+                  : predictionResult.risk_level === 'Medium Risk'
+                  ? 'rgba(251, 191, 36, 0.2)'
+                  : 'rgba(239, 68, 68, 0.2)',
+                border: `2px solid ${
+                  predictionResult.risk_level === 'Low Risk' 
+                    ? '#22c55e' 
+                    : predictionResult.risk_level === 'Medium Risk'
+                    ? '#fbbf24'
+                    : '#ef4444'
+                }`,
+                borderRadius: '15px',
+                padding: '25px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Risk Assessment</div>
+                <div style={{
+                  fontSize: '1.8rem',
+                  fontWeight: '700',
+                  color: predictionResult.risk_level === 'Low Risk' 
+                    ? '#22c55e' 
+                    : predictionResult.risk_level === 'Medium Risk'
+                    ? '#fbbf24'
+                    : '#ef4444'
+                }}>
+                  {predictionResult.risk_level || 'Medium Risk'}
+                </div>
+              </div>
+            </div>
+
+            {/* Factor Analysis Section */}
+            {predictionResult.feature_importance && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '15px',
+                padding: '30px',
+                marginBottom: '30px'
+              }}>
+                <h3 style={{
+                  color: '#22c55e',
+                  marginBottom: '25px',
+                  fontSize: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  Factor Analysis
+                </h3>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '20px'
+                }}>
+                  {Object.entries(predictionResult.feature_importance)
+                    .sort(([,a], [,b]) => Math.abs(b) - Math.abs(a))
+                    .slice(0, 8)
+                    .map(([feature, importance]) => (
+                    <div key={feature} style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '10px',
+                      padding: '15px'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
+                          {feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                        <span style={{
+                          fontSize: '0.8rem',
+                          color: importance > 0 ? '#22c55e' : '#ef4444'
+                        }}>
+                          {importance > 0 ? '+' : ''}{(importance * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div style={{
+                        height: '6px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '3px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${Math.abs(importance) * 100}%`,
+                          background: importance > 0 
+                            ? 'linear-gradient(45deg, #22c55e, #10b981)'
+                            : 'linear-gradient(45deg, #ef4444, #dc2626)',
+                          borderRadius: '3px'
+                        }}></div>
+                      </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Business Experience (Years) *
-                      </label>
-                      <input
-                        type="number"
-                        name="owner_business_experience"
-                        value={formData.owner_business_experience}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 7"
-                        className="form-input"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                        min="0"
-                        max="50"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Owner Gender *
-                      </label>
-                      <select
-                        name="owner_gender"
-                        value={formData.owner_gender}
-                        onChange={handleInputChange}
-                        className="form-select"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                      >
-                        <option value="">Select gender...</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#2d2d2d', fontFamily: "'Space Mono', monospace" }}>
-                        Education Level *
-                      </label>
-                      <select
-                        name="education_level_numeric"
-                        value={formData.education_level_numeric}
-                        onChange={handleInputChange}
-                        className="form-select"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                        required
-                      >
-                        <option value="">Select education level...</option>
-                        {educationLevels.map(level => (
-                          <option key={level.value} value={level.value}>{level.label}</option>
-                        ))}
-                      </select>
-                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Factor Analysis */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '20px',
+              marginBottom: '30px'
+            }}>
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid #22c55e',
+                borderRadius: '15px',
+                padding: '25px'
+              }}>
+                <h4 style={{ color: '#22c55e', marginBottom: '15px', fontSize: '1.2rem' }}>
+                  Financial Factors
+                </h4>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Business Capital</span>
+                    <span style={{ color: '#22c55e', fontWeight: '600' }}>Strong</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Capital Source</span>
+                    <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Entity Structure</span>
+                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Submit Button */}
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="btn-primary text-lg py-4 px-12 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Space Mono', monospace" }}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center justify-center">
-                        <div className="spinner mr-3"></div>
-                        Analyzing Business...
-                      </span>
-                    ) : (
-                      'Predict Business Success'
-                    )}
-                  </button>
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid #3b82f6',
+                borderRadius: '15px',
+                padding: '25px'
+              }}>
+                <h4 style={{ color: '#3b82f6', marginBottom: '15px', fontSize: '1.2rem' }}>
+                  👥 Human Capital
+                </h4>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Owner Experience</span>
+                    <span style={{ color: '#22c55e', fontWeight: '600' }}>High</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Education Level</span>
+                    <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Age Factor</span>
+                    <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
+                  </div>
                 </div>
-              </form>
+              </div>
+
+              <div style={{
+                background: 'rgba(168, 85, 247, 0.1)',
+                border: '1px solid #a855f7',
+                borderRadius: '15px',
+                padding: '25px'
+              }}>
+                <h4 style={{ color: '#a855f7', marginBottom: '15px', fontSize: '1.2rem' }}>
+                  🌍 Market Factors
+                </h4>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Business Sector</span>
+                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Location</span>
+                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Team Size</span>
+                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Overall Assessment */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '15px',
+              padding: '25px',
+              marginBottom: '30px'
+            }}>
+              <h3 style={{
+                color: '#22c55e',
+                marginBottom: '15px',
+                fontSize: '1.5rem'
+              }}>
+                Overall Assessment
+              </h3>
+              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '15px' }}>
+                {predictionResult.prediction === 'Success' 
+                  ? 'Excellent business potential with high success probability.'
+                  : 'Business shows potential but requires strategic improvements.'}
+              </p>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '15px',
+                marginTop: '20px'
+              }}>
+                <div style={{
+                  background: 'rgba(34, 197, 94, 0.2)',
+                  padding: '15px',
+                  borderRadius: '10px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Strengths</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#22c55e' }}>
+                    {predictionResult.strengths?.length || 2}
+                  </div>
+                </div>
+                
+                <div style={{
+                  background: 'rgba(251, 191, 36, 0.2)',
+                  padding: '15px',
+                  borderRadius: '10px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Opportunities</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fbbf24' }}>
+                    {predictionResult.opportunities?.length || 3}
+                  </div>
+                </div>
+                
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  padding: '15px',
+                  borderRadius: '10px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Risk Areas</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444' }}>
+                    {predictionResult.risks?.length || 2}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Strategic Recommendations */}
+            {predictionResult.recommendations && predictionResult.recommendations.length > 0 && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '15px',
+                padding: '25px',
+                marginBottom: '30px'
+              }}>
+                <h3 style={{
+                  color: '#22c55e',
+                  marginBottom: '20px',
+                  fontSize: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  Strategic Recommendations
+                </h3>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                  gap: '15px'
+                }}>
+                  {predictionResult.recommendations.map((rec, index) => (
+                    <div key={index} style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '10px',
+                      padding: '20px',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '15px',
+                        right: '15px',
+                        background: '#22c55e',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '25px',
+                        height: '25px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: '700'
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{
+                        fontSize: '1rem',
+                        lineHeight: '1.5',
+                        paddingRight: '35px'
+                      }}>
+                        {rec}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '15px',
+              justifyContent: 'center',
+              marginTop: '30px',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={resetForm}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  color: 'white',
+                  fontFamily: "'Space Mono', monospace",
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+              >
+                Analyze Another Idea
+              </button>
+              
+              <button
+                onClick={() => window.print()}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  color: 'white',
+                  fontFamily: "'Space Mono', monospace",
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+              >
+                Print Results
+              </button>
+              
+              <button
+                onClick={copyResults}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  color: 'white',
+                  fontFamily: "'Space Mono', monospace",
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+              >
+                Copy Results
+              </button>
             </div>
           </div>
-        </motion.div>
-        
+        )}
+
+        {/* Error Display */}
+        {showError && errorDetails && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid #ef4444',
+            borderRadius: '10px',
+            padding: '20px',
+            marginTop: '20px'
+          }}>
+            <h3 style={{ color: '#ef4444', marginBottom: '10px' }}>Prediction Error</h3>
+            <p style={{ marginBottom: '15px' }}>{errorDetails.message}</p>
+            
+            <details style={{ marginTop: '15px' }}>
+              <summary style={{ cursor: 'pointer', color: '#ef4444' }}>Technical Details</summary>
+              <pre style={{
+                background: 'rgba(0,0,0,0.3)',
+                padding: '15px',
+                borderRadius: '5px',
+                marginTop: '10px',
+                whiteSpace: 'pre-wrap',
+                fontSize: '12px',
+                overflow: 'auto'
+              }}>
+                {JSON.stringify(errorDetails.error || errorDetails.response, null, 2)}
+              </pre>
+            </details>
+            
+            <div style={{ marginTop: '15px' }}>
+              <button
+                onClick={hideError}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  color: 'white',
+                  fontFamily: "'Space Mono', monospace",
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Add CSS animation for spinner */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

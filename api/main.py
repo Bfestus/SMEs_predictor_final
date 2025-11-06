@@ -92,7 +92,9 @@ async def startup_event():
             'Foreign Investment': 6,
             'Venture Capital': 7,
             'Crowdfunding': 8,
-            'Inheritance': 9
+            'Inheritance': 9,
+            'Business Incubator': 10,
+            'Angel Investment': 11
         },
         'business_sector': {
             'Agriculture, Forestry And Fishing': 0,
@@ -116,7 +118,9 @@ async def startup_event():
             'Mining And Quarrying': 18,
             'Activities Of Households As Employers; Undifferentiated Goods- And Services-Producing Activities Of Households For Own Use': 19,
             'Activities Of Extraterritorial Organizations And Bodies': 20,
-            'Unclassified': 21
+            'Unclassified': 21,
+            'Motorcycle transport': 22,
+            'Activities of Mobile Money Agents': 23
         },
         'business_location': {
             'BUGESERA': 0, 'BURERA': 1, 'GAKENKE': 2, 'GASABO': 3, 'GATSIBO': 4,
@@ -130,7 +134,10 @@ async def startup_event():
             'INDIVIDUAL': 0,
             'PRIVATE CORPORATION': 1,
             'COOPERATIVE': 2,
-            'JOINT VENTURE': 3
+            'JOINT VENTURE': 3,
+            'LIMITED LIABILITY COMPANY': 4,
+            'PARTNERSHIP': 5,
+            'SOLE PROPRIETORSHIP': 6
         },
         'owner_gender': {
             'M': 0,
@@ -316,18 +323,6 @@ class ExistingBusinessData(BaseModel):
         ge=0,
         example=15
     )
-    
-    # Business Performance Indicators
-    business_scaling: str = Field(
-        default="High_Scaling",
-        description="Business scaling indicator",
-        example="High_Scaling"
-    )
-    employment_growth: str = Field(
-        default="Increased",
-        description="Employment growth pattern",
-        example="Increased"
-    )
 
 class ExistingBusinessPredictionResponse(BaseModel):
     """Response model for existing business prediction"""
@@ -490,6 +485,35 @@ def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
     
     revenue_per_employee_trend = np.mean(np.diff(revenue_per_employee_values))
     
+    # Calculate turnover growth automatically
+    if data.turnover_fourth_year > data.turnover_first_year:
+        turnover_growth = "Increased"
+    elif data.turnover_fourth_year < data.turnover_first_year:
+        turnover_growth = "Decreased"
+    else:
+        turnover_growth = "Stable"
+    
+    # Calculate employment growth automatically
+    if data.employment_fourth_year > data.employment_first_year:
+        employment_growth = "Increased"
+    elif data.employment_fourth_year < data.employment_first_year:
+        employment_growth = "Decreased"
+    else:
+        employment_growth = "Stable"
+    
+    # Calculate business scaling automatically based on revenue and employment growth
+    revenue_change_pct = ((data.turnover_fourth_year - data.turnover_first_year) / max(data.turnover_first_year, 1)) * 100
+    employment_change_pct = ((data.employment_fourth_year - data.employment_first_year) / max(data.employment_first_year, 1)) * 100
+    
+    avg_growth = (revenue_change_pct + employment_change_pct) / 2
+    
+    if avg_growth > 50:
+        business_scaling = "High_Scaling"
+    elif avg_growth > 10:
+        business_scaling = "Medium_Scaling"
+    else:
+        business_scaling = "Low_Scaling"
+    
     return {
         'revenue_growth_rate': revenue_growth_rate,
         'revenue_consistency_score': revenue_consistency_score,
@@ -497,24 +521,41 @@ def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
         'capital_efficiency': capital_efficiency,
         'current_revenue_per_employee': current_revenue_per_employee,
         'revenue_per_employee_trend': revenue_per_employee_trend,
-        'employment_growth': data.employment_growth,
-        'business_scaling_indicator': data.business_scaling
+        'turnover_growth': turnover_growth,
+        'employment_growth': employment_growth,
+        'business_scaling_indicator': business_scaling
     }
 
-def encode_categorical_features(data: ExistingBusinessData) -> Dict[str, int]:
+def encode_categorical_features(data: ExistingBusinessData, engineered: Dict[str, any]) -> Dict[str, int]:
     """Encode categorical features for existing business prediction"""
     
-    # Business sector encoding
+    # Business sector encoding - ALL 24 sectors from dataset
     sector_mapping = {
-        'Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles': 0,
-        'Manufacturing': 1,
-        'Agriculture, Forestry And Fishing': 2,
-        'Information And Communication': 3,
-        'Professional, Scientific And Technical Activities': 4,
-        'Construction': 5,
-        'Transportation And Storage': 6,
-        'Accommodation And Food Service Activities': 7,
-        'Other': 8
+        'Other Service Activities': 0,
+        'Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles': 1,
+        'Transportation And Storage': 2,
+        'Financial And Insurance Activities': 3,
+        'Accommodation And Food Service Activities': 4,
+        'Unclassified': 5,
+        'Construction': 6,
+        'Professional, Scientific And Technical Activities': 7,
+        'Agriculture, Forestry And Fishing': 8,
+        'Manufacturing': 9,
+        'Information And Communication': 10,
+        'Administrative And Support Service Activities': 11,
+        'Education': 12,
+        'Arts, Entertainment And Recreation': 13,
+        'Human Health And Social Work Activities': 14,
+        'Water Supply, Gas And Remediation Services': 15,
+        'Mining And Quarrying': 16,
+        'Real Estate Activities': 17,
+        'Public Administration And Defence; Compulsory Social Security': 18,
+        'Activities Of Households As Employers; Undifferentiated Goods- And Services-Producing Activities Of Households For Own Use': 19,
+        'Electricity, Gas And Air Conditioning Supply': 20,
+        'Activities Of Extraterritorial Organizations And Bodies': 21,
+        'Motorcycle transport': 22,
+        'Activities of Mobile Money Agents': 23,
+        'Other': 24  # Fallback for unknown sectors
     }
     
     # Business scaling encoding
@@ -524,17 +565,17 @@ def encode_categorical_features(data: ExistingBusinessData) -> Dict[str, int]:
         'Declining': 2
     }
     
-    # Employment growth encoding
+    # Employment growth encoding - matching dataset values
     employment_mapping = {
         'Increased': 0,
         'Decreased': 1,
-        'No_Change': 2
+        'Stable': 2  # Changed from 'No_Change' to 'Stable' to match dataset
     }
     
     encoded = {
-        'business_sector_encoded': sector_mapping.get(data.business_sector, 8),  # Default to 'Other'
-        'business_scaling_encoded': scaling_mapping.get(data.business_scaling, 1),  # Default to Mixed
-        'employment_growth_encoded': employment_mapping.get(data.employment_growth, 2)  # Default to No_Change
+        'business_sector_encoded': sector_mapping.get(data.business_sector, 24),  # Default to 'Other' (index 24)
+        'business_scaling_encoded': scaling_mapping.get(engineered['business_scaling_indicator'], 1),  # Use calculated value
+        'employment_growth_encoded': employment_mapping.get(engineered['employment_growth'], 2)  # Use calculated value
     }
     
     return encoded
@@ -735,7 +776,7 @@ async def predict_existing_business_success(business_data: ExistingBusinessData)
         engineered = engineer_features(business_data)
         
         # Step 2: Encode categorical features
-        encoded = encode_categorical_features(business_data)
+        encoded = encode_categorical_features(business_data, engineered)
         
         # Step 3: Create feature vector
         feature_vector = np.array([
