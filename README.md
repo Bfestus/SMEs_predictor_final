@@ -9,7 +9,7 @@ An AI-powered web application that predicts the success probability of Small and
 
 ## Demo Video
 
-**Video Link:** [INSERT YOUR 5-MINUTE VIDEO LINK HERE]
+## **Video Link:** https://youtu.be/gHkcdG3H6aU
 
 ---
 
