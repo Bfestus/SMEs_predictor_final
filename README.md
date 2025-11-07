@@ -32,7 +32,7 @@ An AI-powered web application that predicts the success probability of Small and
 The SME Success Predictor helps entrepreneurs, investors, and business consultants make data-driven decisions about SME ventures in Rwanda. The system analyzes business fundamentals, historical performance data, and market factors to predict business success probability with explainable AI recommendations.
 
 ### Key Capabilities
-- Pre-Investment Analysis: Evaluate business ideas before investing
+- Pre-Investment Analysis: Evaluate business early stage descriptions before investing
 - Existing Business Performance: Analyze 4-year business trends
 - SHAP-Based Recommendations: Actionable insights from explainable AI
 - Risk Factor Identification: Understand business challenges
