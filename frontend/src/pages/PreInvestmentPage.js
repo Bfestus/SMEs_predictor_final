@@ -4,7 +4,33 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 
-const API_BASE_URL = 'http://localhost:8000';
+// API Configuration - TEMPORARY: Force deployed API
+// TODO: Uncomment the dynamic detection once local development is confirmed working
+const API_BASE_URL = 'https://smes-predictor-final.onrender.com';
+
+// Dynamic detection (currently disabled for debugging)
+/*
+const API_BASE_URL = (() => {
+  // Check if we're explicitly running in local development
+  const isLocalDev = window.location.hostname === 'localhost' && 
+                    window.location.port === '3000';
+  
+  // Always use deployed API unless we're sure we're in local development
+  const apiUrl = isLocalDev ? 'http://localhost:8000' : 'https://smes-predictor-final.onrender.com';
+  
+  console.log('Environment check:');
+  console.log('- Hostname:', window.location.hostname);
+  console.log('- Port:', window.location.port);
+  console.log('- Full URL:', window.location.href);
+  console.log('- Is Local Dev:', isLocalDev);
+  console.log('- Using API:', apiUrl);
+  
+  return apiUrl;
+})();
+*/
+
+console.log('Using API Base URL:', API_BASE_URL);
+
 
 const PreInvestmentPage = () => {
   const [formData, setFormData] = useState({
@@ -344,8 +370,20 @@ const PreInvestmentPage = () => {
         }
       } else if (error.request) {
         errorType = 'Network Error';
-        errorMessage = 'Cannot connect to API server. Please ensure the server is running on port 8000.';
-        errorData = { request: error.request, code: error.code };
+        
+        // Check if we're trying to connect to localhost while not running locally
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+        
+        if (!isLocalhost && API_BASE_URL.includes('localhost')) {
+          errorMessage = 'Local API server not accessible. Switching to deployed API...';
+        } else if (API_BASE_URL.includes('onrender.com')) {
+          errorMessage = 'Cannot connect to deployed API server. The server might be starting up (this can take a few minutes for free tier services) or experiencing issues.';
+        } else {
+          errorMessage = 'Cannot connect to API server. Please check your internet connection and try again.';
+        }
+        
+        errorData = { request: error.request, code: error.code, apiUrl: API_BASE_URL };
       } else {
         errorType = 'Request Setup Error';
         errorMessage = `Error setting up request: ${error.message}`;
