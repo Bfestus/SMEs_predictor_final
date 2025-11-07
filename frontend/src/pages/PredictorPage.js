@@ -7,8 +7,13 @@ const PredictorPage = () => {
   const [hoveredCard, setHoveredCard] = useState(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16" style={{ fontFamily: "'Space Mono', monospace" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 py-12" style={{ 
+      fontFamily: "'Space Mono', monospace",
+      background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 25%, #f8f0ff 50%, #fff0f8 75%, #f0fff8 100%)',
+      backgroundSize: '300% 300%',
+      animation: 'gradientShift 25s ease infinite'
+    }}>
+      <div className="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
@@ -21,10 +26,10 @@ const PredictorPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h1 className="text-5xl font-bold mb-6" style={{ color: '#1f2937', fontFamily: "'Space Mono', monospace" }}>
+          <h1 className="text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#1f2937', fontFamily: "'Space Mono', monospace" }}>
             <span style={{ color: '#3b82f6' }}>SME Success</span> Predictor
           </h1>
-          <p className="text-xl max-w-4xl mx-auto text-gray-600 leading-relaxed" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <p className="text-base lg:text-lg max-w-4xl mx-auto text-gray-600 leading-relaxed" style={{ fontFamily: "'Space Mono', monospace" }}>
             Advanced AI-powered business success prediction platform for Small and Medium Enterprises in Rwanda
           </p>
           <div className="mt-6 inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
@@ -48,21 +53,26 @@ const PredictorPage = () => {
             className="cursor-pointer group"
             onClick={() => navigate('/predictor/pre-investment')}
           >
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden border border-white/50" style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}>
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-white relative overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 p-6 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-white/5 rounded-full"></div>
                 <div className="relative z-10">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl mb-4 backdrop-blur-sm">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl mb-3 backdrop-blur-sm">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  <h3 className="text-xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
                     Pre-Investment Analysis
                   </h3>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-blue-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-blue-100 opacity-90 text-sm" style={{ fontFamily: "'Space Mono', monospace" }}>
                       For startup concepts and business ideas seeking investment
                     </p>
                     <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-mono">
@@ -73,8 +83,8 @@ const PredictorPage = () => {
               </div>
               
               {/* Content */}
-              <div className="p-8">
-                <div className="space-y-4 mb-8">
+              <div className="p-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-start space-x-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                     <span className="text-gray-700 text-sm">Business concept viability assessment</span>
@@ -97,7 +107,7 @@ const PredictorPage = () => {
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                     STARTUP FOCUSED
                   </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                  <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                     Get Started
                   </button>
                 </div>
@@ -113,21 +123,26 @@ const PredictorPage = () => {
             className="cursor-pointer group"
             onClick={() => navigate('/predictor/existing-business')}
           >
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden border border-white/50" style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}>
               {/* Header */}
-              <div className="bg-gradient-to-r from-green-600 to-green-700 p-8 text-white relative overflow-hidden">
+              <div className="bg-gradient-to-r from-green-600 via-green-700 to-emerald-600 p-6 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-white/5 rounded-full"></div>
                 <div className="relative z-10">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl mb-4 backdrop-blur-sm">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl mb-3 backdrop-blur-sm">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  <h3 className="text-xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
                     Existing Business Analysis
                   </h3>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-green-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-green-100 opacity-90 text-sm" style={{ fontFamily: "'Space Mono', monospace" }}>
                       For operational businesses with financial history
                     </p>
                     <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-mono">
@@ -138,8 +153,8 @@ const PredictorPage = () => {
               </div>
               
               {/* Content */}
-              <div className="p-8">
-                <div className="space-y-4 mb-8">
+              <div className="p-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-start space-x-3">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                     <span className="text-gray-700 text-sm">4-year revenue performance analysis</span>
@@ -162,7 +177,7 @@ const PredictorPage = () => {
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                     PERFORMANCE FOCUSED
                   </div>
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                  <button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                     Get Started
                   </button>
                 </div>
@@ -176,26 +191,29 @@ const PredictorPage = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100"
-        >
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4" style={{ fontFamily: "'Space Mono', monospace" }}>
+          className="bg-white rounded-2xl shadow-2xl p-8 border border-white/50" style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}>
+          <div className="text-center mb-8">
+            <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3" style={{ fontFamily: "'Space Mono', monospace" }}>
               Comprehensive Business Intelligence
             </h3>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base text-gray-600 max-w-3xl mx-auto">
               Our AI models analyze different aspects of your business depending on your current stage and requirements
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="border-l-4 border-blue-500 pl-8">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="border-l-4 border-blue-500 pl-6">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h4 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Space Mono', monospace" }}>
+                <h4 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Space Mono', monospace" }}>
                   Pre-Investment Intelligence
                 </h4>
               </div>
@@ -227,14 +245,14 @@ const PredictorPage = () => {
               </div>
             </div>
             
-            <div className="border-l-4 border-green-500 pl-8">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="border-l-4 border-green-500 pl-6">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                   </svg>
                 </div>
-                <h4 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Space Mono', monospace" }}>
+                <h4 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Space Mono', monospace" }}>
                   Performance Intelligence
                 </h4>
               </div>
@@ -268,6 +286,15 @@ const PredictorPage = () => {
           </div>
         </motion.div>
       </div>
+      
+      {/* Global Styles */}
+      <style jsx>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
     </div>
   );
 };
