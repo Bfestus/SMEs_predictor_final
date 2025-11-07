@@ -311,12 +311,9 @@ python test_api.py
 - PDF Generation: 0.9s
 
 **Screenshots:**
-
-![Galaxy Tab Screenshot 1](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.27_9f3cc21b.jpg)
-![Galaxy Tab Screenshot 2](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.28_655565d2.jpg)
-![Galaxy Tab Screenshot 3](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.28_f35c3a01.jpg)
-
----
+```
+[INSERT GALAXY TAB SCREENSHOTS HERE]
+```
 ```bash
 curl -X POST https://smes-predictor-final.onrender.com/predict \
   -H "Content-Type: application/json" \
