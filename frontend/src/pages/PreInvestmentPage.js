@@ -9,34 +9,32 @@ const API_CONFIG = {
   LOCAL_URL: 'http://localhost:8000',
   DEPLOYED_URL: 'https://smes-predictor-final.onrender.com',
   
-  // Check if local API is available
-  checkLocalAPI: async () => {
+  // Get the best available API URL
+  getApiUrl: async () => {
+    // First try local API
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // 1 second timeout
+      
       const response = await fetch(`${API_CONFIG.LOCAL_URL}/docs`, { 
         method: 'HEAD',
-        timeout: 2000 
+        signal: controller.signal
       });
-      return response.ok;
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log('✅ Using Local API:', API_CONFIG.LOCAL_URL);
+        return API_CONFIG.LOCAL_URL;
+      }
     } catch (error) {
-      return false;
+      // Local API not available, use deployed
     }
+    
+    console.log('🌐 Using Deployed API:', API_CONFIG.DEPLOYED_URL);
+    return API_CONFIG.DEPLOYED_URL;
   }
 };
-
-// Initialize API URL with priority: Local > Deployed
-let API_BASE_URL = API_CONFIG.DEPLOYED_URL; // Default fallback
-
-// Check local API availability on startup
-(async () => {
-  const isLocalAvailable = await API_CONFIG.checkLocalAPI();
-  if (isLocalAvailable) {
-    API_BASE_URL = API_CONFIG.LOCAL_URL;
-    console.log('✅ Local API detected - Using:', API_BASE_URL);
-  } else {
-    API_BASE_URL = API_CONFIG.DEPLOYED_URL;
-    console.log('🌐 Local API not available - Using deployed API:', API_BASE_URL);
-  }
-})();
 
 
 const PreInvestmentPage = () => {
@@ -307,30 +305,6 @@ const PreInvestmentPage = () => {
     setShowError(false);
     setShowResults(false);
 
-    // Function to try API request with automatic fallback
-    const tryAPIRequest = async (apiUrl, data, retryWithFallback = true) => {
-      console.log(`Attempting API request to: ${apiUrl}`);
-      
-      try {
-        const response = await axios.post(`${apiUrl}/predict`, data, {
-          timeout: 15000 // 15 second timeout
-        });
-        console.log('API Response:', response.data);
-        return { success: true, data: response.data };
-      } catch (error) {
-        console.log(`Failed to connect to ${apiUrl}:`, error.message);
-        
-        // If local API failed and we can retry with deployed API
-        if (retryWithFallback && apiUrl === API_CONFIG.LOCAL_URL) {
-          console.log('🔄 Falling back to deployed API...');
-          toast.loading('Local API unavailable, switching to deployed API...', { id: 'api-fallback' });
-          return await tryAPIRequest(API_CONFIG.DEPLOYED_URL, data, false);
-        }
-        
-        throw error;
-      }
-    };
-
     try {
       const processedData = {
         ...formData,
@@ -343,29 +317,71 @@ const PreInvestmentPage = () => {
 
       console.log('Sending data to API:', processedData);
       
-      // Try local API first, then fallback to deployed
-      const result = await tryAPIRequest(API_BASE_URL, processedData);
+      // Get the best available API URL (checks local first)
+      const apiUrl = await API_CONFIG.getApiUrl();
       
-      if (result.success && result.data.success) {
-        toast.success('Prediction completed successfully!', { id: 'api-fallback' });
-        setPredictionResult(result.data);
-        setShowResults(true);
-        setTimeout(() => {
-          const resultsElement = document.getElementById('prediction-results');
-          if (resultsElement) {
-            resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
-      } else {
-        const errorMessage = result.data.error || result.data.detail || 'Prediction failed';
-        toast.error(errorMessage);
-        setErrorDetails({
-          type: 'API Error',
-          message: errorMessage,
-          response: result.data,
-          timestamp: new Date().toISOString()
+      try {
+        // Try the selected API
+        const response = await axios.post(`${apiUrl}/predict`, processedData, {
+          timeout: 30000 // 30 second timeout for Render cold starts
         });
-        setShowError(true);
+        
+        console.log('API Response:', response.data);
+        
+        if (response.data.success) {
+          toast.success('Prediction completed successfully!');
+          setPredictionResult(response.data);
+          setShowResults(true);
+          setTimeout(() => {
+            const resultsElement = document.getElementById('prediction-results');
+            if (resultsElement) {
+              resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        } else {
+          const errorMessage = response.data.error || response.data.detail || 'Prediction failed';
+          toast.error(errorMessage);
+          setErrorDetails({
+            type: 'API Error',
+            message: errorMessage,
+            response: response.data,
+            timestamp: new Date().toISOString()
+          });
+          setShowError(true);
+        }
+      } catch (apiError) {
+        // If the primary API failed and it was local, try deployed as fallback
+        if (apiUrl === API_CONFIG.LOCAL_URL) {
+          console.log('🔄 Local API failed, trying deployed API...');
+          toast.loading('Switching to deployed API...', { id: 'api-fallback' });
+          
+          try {
+            const response = await axios.post(`${API_CONFIG.DEPLOYED_URL}/predict`, processedData, {
+              timeout: 30000
+            });
+            
+            console.log('Deployed API Response:', response.data);
+            
+            if (response.data.success) {
+              toast.success('Prediction completed successfully!', { id: 'api-fallback' });
+              setPredictionResult(response.data);
+              setShowResults(true);
+              setTimeout(() => {
+                const resultsElement = document.getElementById('prediction-results');
+                if (resultsElement) {
+                  resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 100);
+              return; // Exit successfully
+            }
+          } catch (fallbackError) {
+            // Both APIs failed, throw the original error
+            throw apiError;
+          }
+        }
+        
+        // If deployed API failed or no fallback available, throw error
+        throw apiError;
       }
     } catch (error) {
       console.error('Prediction error:', error);
@@ -402,20 +418,8 @@ const PreInvestmentPage = () => {
         }
       } else if (error.request) {
         errorType = 'Network Error';
-        
-        // Check if we're trying to connect to localhost while not running locally
-        const isLocalhost = window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1';
-        
-        if (!isLocalhost && API_BASE_URL.includes('localhost')) {
-          errorMessage = 'Local API server not accessible. Switching to deployed API...';
-        } else if (API_BASE_URL.includes('onrender.com')) {
-          errorMessage = 'Cannot connect to deployed API server. The server might be starting up (this can take a few minutes for free tier services) or experiencing issues.';
-        } else {
-          errorMessage = 'Cannot connect to API server. Please check your internet connection and try again.';
-        }
-        
-        errorData = { request: error.request, code: error.code, apiUrl: API_BASE_URL };
+        errorMessage = 'Cannot connect to API server. Please check your internet connection and try again. The server might be starting up if using deployed API.';
+        errorData = { request: error.request, code: error.code };
       } else {
         errorType = 'Request Setup Error';
         errorMessage = `Error setting up request: ${error.message}`;
