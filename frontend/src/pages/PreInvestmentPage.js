@@ -4,32 +4,39 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 
-// API Configuration - TEMPORARY: Force deployed API
-// TODO: Uncomment the dynamic detection once local development is confirmed working
-const API_BASE_URL = 'https://smes-predictor-final.onrender.com';
+// API Configuration - Local priority with automatic fallback
+const API_CONFIG = {
+  LOCAL_URL: 'http://localhost:8000',
+  DEPLOYED_URL: 'https://smes-predictor-final.onrender.com',
+  
+  // Check if local API is available
+  checkLocalAPI: async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.LOCAL_URL}/docs`, { 
+        method: 'HEAD',
+        timeout: 2000 
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+};
 
-// Dynamic detection (currently disabled for debugging)
-/*
-const API_BASE_URL = (() => {
-  // Check if we're explicitly running in local development
-  const isLocalDev = window.location.hostname === 'localhost' && 
-                    window.location.port === '3000';
-  
-  // Always use deployed API unless we're sure we're in local development
-  const apiUrl = isLocalDev ? 'http://localhost:8000' : 'https://smes-predictor-final.onrender.com';
-  
-  console.log('Environment check:');
-  console.log('- Hostname:', window.location.hostname);
-  console.log('- Port:', window.location.port);
-  console.log('- Full URL:', window.location.href);
-  console.log('- Is Local Dev:', isLocalDev);
-  console.log('- Using API:', apiUrl);
-  
-  return apiUrl;
+// Initialize API URL with priority: Local > Deployed
+let API_BASE_URL = API_CONFIG.DEPLOYED_URL; // Default fallback
+
+// Check local API availability on startup
+(async () => {
+  const isLocalAvailable = await API_CONFIG.checkLocalAPI();
+  if (isLocalAvailable) {
+    API_BASE_URL = API_CONFIG.LOCAL_URL;
+    console.log('✅ Local API detected - Using:', API_BASE_URL);
+  } else {
+    API_BASE_URL = API_CONFIG.DEPLOYED_URL;
+    console.log('🌐 Local API not available - Using deployed API:', API_BASE_URL);
+  }
 })();
-*/
-
-console.log('Using API Base URL:', API_BASE_URL);
 
 
 const PreInvestmentPage = () => {
@@ -300,6 +307,30 @@ const PreInvestmentPage = () => {
     setShowError(false);
     setShowResults(false);
 
+    // Function to try API request with automatic fallback
+    const tryAPIRequest = async (apiUrl, data, retryWithFallback = true) => {
+      console.log(`Attempting API request to: ${apiUrl}`);
+      
+      try {
+        const response = await axios.post(`${apiUrl}/predict`, data, {
+          timeout: 15000 // 15 second timeout
+        });
+        console.log('API Response:', response.data);
+        return { success: true, data: response.data };
+      } catch (error) {
+        console.log(`Failed to connect to ${apiUrl}:`, error.message);
+        
+        // If local API failed and we can retry with deployed API
+        if (retryWithFallback && apiUrl === API_CONFIG.LOCAL_URL) {
+          console.log('🔄 Falling back to deployed API...');
+          toast.loading('Local API unavailable, switching to deployed API...', { id: 'api-fallback' });
+          return await tryAPIRequest(API_CONFIG.DEPLOYED_URL, data, false);
+        }
+        
+        throw error;
+      }
+    };
+
     try {
       const processedData = {
         ...formData,
@@ -311,12 +342,13 @@ const PreInvestmentPage = () => {
       };
 
       console.log('Sending data to API:', processedData);
-      const response = await axios.post(`${API_BASE_URL}/predict`, processedData);
-      console.log('API Response:', response.data);
       
-      if (response.data.success) {
-        toast.success('Prediction completed successfully!');
-        setPredictionResult(response.data);
+      // Try local API first, then fallback to deployed
+      const result = await tryAPIRequest(API_BASE_URL, processedData);
+      
+      if (result.success && result.data.success) {
+        toast.success('Prediction completed successfully!', { id: 'api-fallback' });
+        setPredictionResult(result.data);
         setShowResults(true);
         setTimeout(() => {
           const resultsElement = document.getElementById('prediction-results');
@@ -325,12 +357,12 @@ const PreInvestmentPage = () => {
           }
         }, 100);
       } else {
-        const errorMessage = response.data.error || response.data.detail || 'Prediction failed';
+        const errorMessage = result.data.error || result.data.detail || 'Prediction failed';
         toast.error(errorMessage);
         setErrorDetails({
           type: 'API Error',
           message: errorMessage,
-          response: response.data,
+          response: result.data,
           timestamp: new Date().toISOString()
         });
         setShowError(true);

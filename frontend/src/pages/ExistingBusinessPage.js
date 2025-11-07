@@ -4,32 +4,39 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// API Configuration - TEMPORARY: Force deployed API
-// TODO: Uncomment the dynamic detection once local development is confirmed working
-const API_BASE_URL = 'https://smes-predictor-final.onrender.com';
+// API Configuration - Local priority with automatic fallback
+const API_CONFIG = {
+  LOCAL_URL: 'http://localhost:8000',
+  DEPLOYED_URL: 'https://smes-predictor-final.onrender.com',
+  
+  // Check if local API is available
+  checkLocalAPI: async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.LOCAL_URL}/docs`, { 
+        method: 'HEAD',
+        timeout: 2000 
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+};
 
-// Dynamic detection (currently disabled for debugging)
-/*
-const API_BASE_URL = (() => {
-  // Check if we're explicitly running in local development
-  const isLocalDev = window.location.hostname === 'localhost' && 
-                    window.location.port === '3000';
-  
-  // Always use deployed API unless we're sure we're in local development
-  const apiUrl = isLocalDev ? 'http://localhost:8000' : 'https://smes-predictor-final.onrender.com';
-  
-  console.log('Environment check:');
-  console.log('- Hostname:', window.location.hostname);
-  console.log('- Port:', window.location.port);
-  console.log('- Full URL:', window.location.href);
-  console.log('- Is Local Dev:', isLocalDev);
-  console.log('- Using API:', apiUrl);
-  
-  return apiUrl;
+// Initialize API URL with priority: Local > Deployed
+let API_BASE_URL = API_CONFIG.DEPLOYED_URL; // Default fallback
+
+// Check local API availability on startup
+(async () => {
+  const isLocalAvailable = await API_CONFIG.checkLocalAPI();
+  if (isLocalAvailable) {
+    API_BASE_URL = API_CONFIG.LOCAL_URL;
+    console.log('✅ Local API detected - Using:', API_BASE_URL);
+  } else {
+    API_BASE_URL = API_CONFIG.DEPLOYED_URL;
+    console.log('🌐 Local API not available - Using deployed API:', API_BASE_URL);
+  }
 })();
-*/
-
-console.log('Using API Base URL:', API_BASE_URL);
 
 const ExistingBusinessPage = () => {
   const [formData, setFormData] = useState({
@@ -321,6 +328,34 @@ const ExistingBusinessPage = () => {
     setShowError(false);
     setShowResults(false);
 
+    // Function to try API request with automatic fallback
+    const tryAPIRequest = async (apiUrl, data, retryWithFallback = true) => {
+      console.log(`Attempting API request to: ${apiUrl}`);
+      
+      try {
+        const response = await axios.post(`${apiUrl}/predict-existing-business`, data, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 15000 // 15 second timeout
+        });
+        console.log('API Response:', response.data);
+        return { success: true, data: response.data };
+      } catch (error) {
+        console.log(`Failed to connect to ${apiUrl}:`, error.message);
+        
+        // If local API failed and we can retry with deployed API
+        if (retryWithFallback && apiUrl === API_CONFIG.LOCAL_URL) {
+          console.log('🔄 Falling back to deployed API...');
+          toast.loading('Local API unavailable, switching to deployed API...', { id: 'api-fallback' });
+          return await tryAPIRequest(API_CONFIG.DEPLOYED_URL, data, false);
+        }
+        
+        throw error;
+      }
+    };
+
     try {
       const processedData = {
         business_capital: parseFloat(formData.business_capital),
@@ -340,22 +375,12 @@ const ExistingBusinessPage = () => {
 
       console.log('Sending data to API:', processedData);
       
-      const response = await axios.post(`${API_BASE_URL}/predict-existing-business`, processedData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        timeout: 30000 // 30 second timeout
-      });
+      // Try local API first, then fallback to deployed
+      const result = await tryAPIRequest(API_BASE_URL, processedData);
       
-      console.log('API Response status:', response.status);
-      console.log('API Response data:', response.data);
-
-      // Show results if we have prediction data, regardless of success status
-      if (response.data.prediction && response.data.success_probability !== undefined) {
-        const successMessage = response.data.success ? 'Prediction completed successfully!' : 'Prediction completed with warnings';
-        toast.success(successMessage);
-        setPredictionResult(response.data);
+      if (result.success && result.data.success) {
+        toast.success('Prediction completed successfully!', { id: 'api-fallback' });
+        setPredictionResult(result.data);
         setShowResults(true);
         setTimeout(() => {
           const resultsElement = document.getElementById('prediction-results');
@@ -364,12 +389,12 @@ const ExistingBusinessPage = () => {
           }
         }, 100);
       } else {
-        const errorMessage = response.data.error || response.data.detail || 'Prediction failed';
+        const errorMessage = result.data.error || result.data.detail || 'Prediction failed';
         toast.error(errorMessage);
         setErrorDetails({
           type: 'API Error',
           message: errorMessage,
-          response: response.data,
+          response: result.data,
           timestamp: new Date().toISOString()
         });
         setShowError(true);
@@ -410,13 +435,7 @@ const ExistingBusinessPage = () => {
       } else if (error.request) {
         errorType = 'Network Error';
         
-        // Check if we're trying to connect to localhost while not running locally
-        const isLocalhost = window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1';
-        
-        if (!isLocalhost && API_BASE_URL.includes('localhost')) {
-          errorMessage = 'Local API server not accessible. Switching to deployed API...';
-        } else if (API_BASE_URL.includes('onrender.com')) {
+        if (API_BASE_URL.includes('onrender.com')) {
           errorMessage = 'Cannot connect to deployed API server. The server might be starting up (this can take a few minutes for free tier services) or experiencing issues.';
         } else {
           errorMessage = 'Cannot connect to API server. Please check your internet connection and try again.';
