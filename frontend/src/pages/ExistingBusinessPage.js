@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -10,7 +12,6 @@ const ExistingBusinessPage = () => {
     business_sector: '',
     entity_type: '',
     business_location: '',
-    number_of_employees: '',
     capital_source: '',
     turnover_first_year: '',
     turnover_second_year: '',
@@ -70,7 +71,7 @@ const ExistingBusinessPage = () => {
   const resetForm = () => {
     setFormData({
       business_capital: '', business_sector: '', entity_type: '', business_location: '',
-      number_of_employees: '', capital_source: '', turnover_first_year: '',
+      capital_source: '', turnover_first_year: '',
       turnover_second_year: '', turnover_third_year: '', turnover_fourth_year: '',
       employment_first_year: '', employment_second_year: '', employment_third_year: '',
       employment_fourth_year: ''
@@ -92,6 +93,197 @@ const ExistingBusinessPage = () => {
     });
   };
 
+  const downloadPDF = async () => {
+    try {
+      toast.loading('Generating PDF report...', { id: 'pdf-generation' });
+      
+      if (!predictionResult) {
+        toast.error('No prediction results to download');
+        return;
+      }
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Simple helper functions
+      const addTitle = (text, size = 16, color = [0, 0, 0]) => {
+        pdf.setTextColor(...color);
+        pdf.setFontSize(size);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(text, pageWidth/2, yPosition, { align: 'center' });
+        yPosition += size * 0.6;
+      };
+
+      const addSubtitle = (text, size = 12) => {
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(size);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(text, pageWidth/2, yPosition, { align: 'center' });
+        yPosition += size * 0.6;
+      };
+
+      const addSectionHeader = (text) => {
+        yPosition += 10;
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(20, yPosition - 5, pageWidth - 40, 12, 'F');
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(text, 25, yPosition + 2);
+        yPosition += 15;
+      };
+
+      const addLine = (label, value, indent = 25) => {
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${label}:`, indent, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(value, indent + 60, yPosition);
+        yPosition += 6;
+      };
+
+      const addText = (text, indent = 25) => {
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const lines = pdf.splitTextToSize(text, pageWidth - 50);
+        lines.forEach((line, index) => {
+          pdf.text(line, indent, yPosition + (index * 5));
+        });
+        yPosition += lines.length * 5 + 3;
+      };
+
+      const checkNewPage = () => {
+        if (yPosition > pageHeight - 30) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+      };
+
+      // HEADER
+      addTitle('SME SUCCESS PREDICTION REPORT');
+      addSubtitle('Professional Business Analysis');
+      addSubtitle(`Generated: ${new Date().toLocaleDateString()}`);
+      yPosition += 10;
+
+      // BUSINESS INFORMATION
+      addSectionHeader('BUSINESS INFORMATION');
+      addLine('Business Capital', `${parseInt(formData.business_capital).toLocaleString()} RWF`);
+      addLine('Business Sector', formData.business_sector);
+      addLine('Entity Type', formData.entity_type);
+      addLine('Location', formData.business_location);
+      addLine('Capital Source', formData.capital_source);
+
+      // PERFORMANCE HISTORY
+      addSectionHeader('4-YEAR PERFORMANCE HISTORY');
+      
+      // Revenue
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Revenue Performance (RWF):', 25, yPosition);
+      yPosition += 8;
+      
+      ['first', 'second', 'third', 'fourth'].forEach((year, index) => {
+        const value = parseInt(formData[`turnover_${year}_year`] || 0).toLocaleString();
+        addLine(`Year ${index + 1}`, value, 30);
+      });
+      yPosition += 5;
+
+      // Employment
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Employment History:', 25, yPosition);
+      yPosition += 8;
+      
+      ['first', 'second', 'third', 'fourth'].forEach((year, index) => {
+        const value = `${parseInt(formData[`employment_${year}_year`] || 0)} employees`;
+        addLine(`Year ${index + 1}`, value, 30);
+      });
+
+      // PREDICTION RESULTS
+      checkNewPage();
+      addSectionHeader('PREDICTION RESULTS');
+      
+      // Main result with color
+      const isSuccess = predictionResult.prediction === 'Success';
+      pdf.setTextColor(isSuccess ? 0 : 200, isSuccess ? 150 : 0, 0);
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Prediction: ${predictionResult.prediction}`, pageWidth/2, yPosition, { align: 'center' });
+      yPosition += 15;
+      
+      pdf.setTextColor(0, 0, 0);
+      addLine('Success Probability', `${(predictionResult.success_probability * 100).toFixed(1)}%`);
+      addLine('Model Confidence', `${(predictionResult.confidence * 100).toFixed(1)}%`);
+
+      // BUSINESS INSIGHTS
+      if (predictionResult.business_insights) {
+        addSectionHeader('BUSINESS INSIGHTS');
+        const insights = predictionResult.business_insights;
+        
+        if (insights.employment_growth) {
+          addLine('Employment Growth', insights.employment_growth);
+        }
+        if (insights.business_scaling) {
+          addLine('Business Scaling', insights.business_scaling);
+        }
+        if (insights.employment_efficiency) {
+          addLine('Employment Efficiency', insights.employment_efficiency.toFixed(2));
+        }
+        if (insights.capital_efficiency) {
+          addLine('Capital Efficiency', insights.capital_efficiency.toFixed(2));
+        }
+      }
+
+      // RECOMMENDATIONS
+      if (predictionResult.recommendations && predictionResult.recommendations.length > 0) {
+        checkNewPage();
+        addSectionHeader('RECOMMENDATIONS');
+        predictionResult.recommendations.forEach((rec, index) => {
+          addText(`${index + 1}. ${rec}`);
+          yPosition += 2;
+        });
+      }
+
+      // RISK FACTORS
+      if (predictionResult.risk_factors && predictionResult.risk_factors.length > 0) {
+        checkNewPage();
+        addSectionHeader('RISK FACTORS');
+        predictionResult.risk_factors.forEach((risk) => {
+          addText(`• ${risk}`);
+        });
+      }
+
+      // DISCLAIMER
+      checkNewPage();
+      addSectionHeader('DISCLAIMER');
+      addText('This AI prediction is for informational purposes only and should not be considered as professional business advice. Results are based on statistical patterns and may not account for all factors affecting business success. Please consult with professional advisors before making important business decisions.');
+
+      // FOOTER
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - 30, pageHeight - 10);
+      pdf.text('SME Predictor v1.1', 20, pageHeight - 10);
+
+      // Download
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `SME-Report-${timestamp}.pdf`;
+      
+      pdf.save(filename);
+      toast.success('PDF report downloaded successfully!', { id: 'pdf-generation' });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF report', { id: 'pdf-generation' });
+    }
+  };
+
   const hideError = () => {
     setErrorDetails(null);
     setShowError(false);
@@ -110,16 +302,15 @@ const ExistingBusinessPage = () => {
         business_sector: formData.business_sector,
         entity_type: formData.entity_type,
         business_location: formData.business_location,
-        number_of_employees: parseInt(formData.number_of_employees),
         capital_source: formData.capital_source,
-        turnover_first_year: parseFloat(formData.turnover_first_year),
-        turnover_second_year: parseFloat(formData.turnover_second_year),
-        turnover_third_year: parseFloat(formData.turnover_third_year),
-        turnover_fourth_year: parseFloat(formData.turnover_fourth_year),
-        employment_first_year: parseInt(formData.employment_first_year),
-        employment_second_year: parseInt(formData.employment_second_year),
-        employment_third_year: parseInt(formData.employment_third_year),
-        employment_fourth_year: parseInt(formData.employment_fourth_year)
+        turnover_first_year: parseFloat(formData.turnover_first_year) || 0,
+        turnover_second_year: parseFloat(formData.turnover_second_year) || 0,
+        turnover_third_year: parseFloat(formData.turnover_third_year) || 0,
+        turnover_fourth_year: parseFloat(formData.turnover_fourth_year) || 0,
+        employment_first_year: parseInt(formData.employment_first_year) || 0,
+        employment_second_year: parseInt(formData.employment_second_year) || 0,
+        employment_third_year: parseInt(formData.employment_third_year) || 0,
+        employment_fourth_year: parseInt(formData.employment_fourth_year) || 0
       };
 
       console.log('Sending data to API:', processedData);
@@ -135,8 +326,10 @@ const ExistingBusinessPage = () => {
       console.log('API Response status:', response.status);
       console.log('API Response data:', response.data);
 
-      if (response.data.success) {
-        toast.success('Prediction completed successfully!');
+      // Show results if we have prediction data, regardless of success status
+      if (response.data.prediction && response.data.success_probability !== undefined) {
+        const successMessage = response.data.success ? 'Prediction completed successfully!' : 'Prediction completed with warnings';
+        toast.success(successMessage);
         setPredictionResult(response.data);
         setShowResults(true);
         setTimeout(() => {
@@ -276,7 +469,6 @@ const ExistingBusinessPage = () => {
                     value={formData.business_capital}
                     onChange={handleInputChange}
                     required
-                    min="0"
                     placeholder="e.g., 1200000"
                     style={{
                       padding: '12px 16px',
@@ -290,29 +482,7 @@ const ExistingBusinessPage = () => {
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
-                    Number of Employees *
-                  </label>
-                  <input
-                    type="number"
-                    name="number_of_employees"
-                    value={formData.number_of_employees}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    placeholder="e.g., 5"
-                    style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
+
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
@@ -464,7 +634,6 @@ const ExistingBusinessPage = () => {
                       value={formData[`turnover_${year}_year`]}
                       onChange={handleInputChange}
                       required
-                      min="0"
                       placeholder={`e.g., ${12000000 + (index * 6000000)}`}
                       style={{
                         padding: '12px 16px',
@@ -502,15 +671,13 @@ const ExistingBusinessPage = () => {
                 {['first', 'second', 'third', 'fourth'].map((year, index) => (
                   <div key={year} style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
-                      {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Employees *
+                      {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Employees
                     </label>
                     <input
                       type="number"
                       name={`employment_${year}_year`}
                       value={formData[`employment_${year}_year`]}
                       onChange={handleInputChange}
-                      required
-                      min="0"
                       placeholder={`e.g., ${5 + (index * 3)}`}
                       style={{
                         padding: '12px 16px',
@@ -677,7 +844,7 @@ const ExistingBusinessPage = () => {
                     fontWeight: '700',
                     color: '#22c55e'
                   }}>
-                    {predictionResult.model_version}
+                    SME Predictor 1.1
                   </div>
                 </div>
               )}
@@ -712,18 +879,6 @@ const ExistingBusinessPage = () => {
                   borderRadius: '10px',
                   textAlign: 'center'
                 }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Revenue Growth</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-                    {predictionResult.business_insights.revenue_growth_rate?.toFixed(1) || 'N/A'}%
-                  </div>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '20px',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
                   <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Employment Growth</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
                     {predictionResult.business_insights.employment_growth || 'N/A'}
@@ -751,18 +906,6 @@ const ExistingBusinessPage = () => {
                   <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Employment Efficiency</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
                     {predictionResult.business_insights.employment_efficiency?.toFixed(2) || 'N/A'}
-                  </div>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '20px',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Revenue per Employee</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-                    {predictionResult.business_insights.current_revenue_per_employee?.toLocaleString() || 'N/A'} RWF
                   </div>
                 </div>
                 
@@ -849,6 +992,42 @@ const ExistingBusinessPage = () => {
               </div>
             )}
 
+            {/* Disclaimer Message */}
+            <div style={{
+              background: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: '10px',
+              padding: '20px',
+              marginTop: '30px',
+              textAlign: 'center'
+            }}>
+              <h4 style={{ 
+                color: '#ffc107', 
+                marginBottom: '15px',
+                fontSize: '1.1rem',
+                fontWeight: '700'
+              }}>
+                Important Disclaimer
+              </h4>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                lineHeight: '1.6',
+                margin: '0 0 10px 0',
+                opacity: 0.9
+              }}>
+                This AI prediction is for informational purposes only and should not be considered as professional business advice. 
+                Results are based on statistical patterns and may not account for all factors affecting business success.
+              </p>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                lineHeight: '1.6',
+                margin: '0',
+                opacity: 0.9
+              }}>
+                <strong>Please consult with professional business consultants, financial advisors, or industry experts before making important business decisions.</strong>
+              </p>
+            </div>
+
             {/* Action Buttons */}
             <div style={{
               display: 'flex',
@@ -894,21 +1073,22 @@ const ExistingBusinessPage = () => {
               </button>
               
               <button
-                onClick={copyResults}
+                onClick={downloadPDF}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
+                  background: 'linear-gradient(45deg, #22c55e, #16a34a)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   border: 'none',
                   color: 'white',
                   fontFamily: "'Space Mono', monospace",
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(34, 197, 94, 0.3)'
                 }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
               >
-                Copy Results
+                Download Report
               </button>
             </div>
           </div>

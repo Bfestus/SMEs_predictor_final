@@ -200,7 +200,7 @@ async def startup_event():
             'revenue_per_employee_trend',
             'employment_efficiency',
             'business_capital',
-            'number_of_employees',
+            'employment_fourth_year',
             'business_sector_encoded',
             'business_scaling_encoded',
             'employment_growth_encoded'
@@ -259,12 +259,6 @@ class ExistingBusinessData(BaseModel):
         default="GASABO",
         description="Business location (Rwanda district)",
         example="GASABO"
-    )
-    number_of_employees: int = Field(
-        default=15,
-        description="Current number of employees", 
-        ge=0,
-        example=15
     )
     capital_source: str = Field(
         default="Bank Loan",
@@ -456,6 +450,9 @@ def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
     else:
         revenue_growth_rate = ((third_year - first_year) / first_year) * 100
     
+    # Bound revenue growth rate to prevent extreme values
+    revenue_growth_rate = max(min(revenue_growth_rate, 1000.0), -100.0)
+    
     # Calculate revenue consistency score
     revenues = [data.turnover_first_year, data.turnover_second_year, data.turnover_third_year]
     revenue_std = np.std(revenues)
@@ -471,9 +468,15 @@ def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
     else:
         employment_efficiency = current_revenue_per_employee / initial_revenue_per_employee
     
+    # Bound employment_efficiency to prevent extreme values
+    employment_efficiency = max(min(employment_efficiency, 10.0), 0.1)
+    
     # Calculate capital efficiency
     total_revenue = data.turnover_first_year + data.turnover_second_year + data.turnover_third_year + data.turnover_fourth_year
     capital_efficiency = total_revenue / max(data.business_capital, 1)
+    
+    # Bound capital_efficiency to prevent extreme values
+    capital_efficiency = max(min(capital_efficiency, 1000.0), 0.001)
     
     # Calculate revenue per employee trend
     revenue_per_employee_values = []
@@ -484,6 +487,9 @@ def engineer_features(data: ExistingBusinessData) -> Dict[str, float]:
         revenue_per_employee_values.append(rpe)
     
     revenue_per_employee_trend = np.mean(np.diff(revenue_per_employee_values))
+    
+    # Bound revenue per employee trend to prevent extreme values
+    revenue_per_employee_trend = max(min(revenue_per_employee_trend, 10000000), -10000000)
     
     # Calculate turnover growth automatically
     if data.turnover_fourth_year > data.turnover_first_year:
@@ -772,6 +778,17 @@ async def predict_existing_business_success(business_data: ExistingBusinessData)
         raise HTTPException(status_code=503, detail="Existing business prediction model not loaded")
     
     try:
+        # Step 0: Sanitize input data to prevent model crashes
+        business_data.business_capital = max(min(business_data.business_capital, 1000000000), 10000)
+        business_data.employment_first_year = max(min(business_data.employment_first_year, 10000), 1)
+        business_data.employment_second_year = max(min(business_data.employment_second_year, 10000), 1)
+        business_data.employment_third_year = max(min(business_data.employment_third_year, 10000), 1)
+        business_data.employment_fourth_year = max(min(business_data.employment_fourth_year, 10000), 1)
+        business_data.turnover_first_year = max(min(business_data.turnover_first_year, 10000000000), 0)
+        business_data.turnover_second_year = max(min(business_data.turnover_second_year, 10000000000), 0)
+        business_data.turnover_third_year = max(min(business_data.turnover_third_year, 10000000000), 0)
+        business_data.turnover_fourth_year = max(min(business_data.turnover_fourth_year, 10000000000), 0)
+        
         # Step 1: Engineer features
         engineered = engineer_features(business_data)
         
@@ -791,18 +808,30 @@ async def predict_existing_business_success(business_data: ExistingBusinessData)
             engineered['revenue_per_employee_trend'],
             engineered['employment_efficiency'],
             business_data.business_capital,
-            business_data.number_of_employees,
+            max(business_data.employment_fourth_year, 1),
             encoded['business_sector_encoded'],
             encoded['business_scaling_encoded'],
             encoded['employment_growth_encoded']
         ]).reshape(1, -1)
         
         # Step 4: Scale features
-        feature_vector_scaled = feature_scaler.transform(feature_vector)
+        try:
+            feature_vector_scaled = feature_scaler.transform(feature_vector)
+        except Exception as scaling_error:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Input values outside valid business ranges. Please check your data and try again."
+            )
         
-        # Step 5: Make prediction
-        prediction = xgb_model.predict(feature_vector_scaled)[0]
-        probabilities = xgb_model.predict_proba(feature_vector_scaled)[0]
+        # Step 5: Make prediction with error handling
+        try:
+            prediction = xgb_model.predict(feature_vector_scaled)[0]
+            probabilities = xgb_model.predict_proba(feature_vector_scaled)[0]
+        except Exception as prediction_error:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unable to process prediction with provided data. Please verify input ranges."
+            )
         
         success_probability = probabilities[1]
         confidence = max(probabilities[0], probabilities[1])
@@ -882,7 +911,6 @@ async def get_existing_business_sample():
             "business_sector": "Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles",
             "entity_type": "PRIVATE CORPORATION",
             "business_location": "GASABO",
-            "number_of_employees": 15,
             "capital_source": "Bank Loan",
             "turnover_first_year": 12000000,
             "turnover_second_year": 18000000,

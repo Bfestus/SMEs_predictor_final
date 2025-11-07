@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -73,6 +74,35 @@ const PreInvestmentPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Helper function to convert numeric assessment counts to descriptive words
+  const getAssessmentText = (count, type) => {
+    const assessmentLevels = {
+      strengths: {
+        1: 'Limited',
+        2: 'Moderate', 
+        3: 'Strong',
+        4: 'Excellent',
+        5: 'Outstanding'
+      },
+      opportunities: {
+        1: 'Few',
+        2: 'Some',
+        3: 'Several',
+        4: 'Many',
+        5: 'Abundant'
+      },
+      risks: {
+        1: 'Minimal',
+        2: 'Low',
+        3: 'Moderate',
+        4: 'High',
+        5: 'Critical'
+      }
+    };
+    
+    return assessmentLevels[type]?.[count] || assessmentLevels[type]?.[3] || 'Moderate';
+  };
+
   const resetForm = () => {
     setFormData({
       business_capital: '', owner_age: '', owner_business_experience: '',
@@ -86,14 +116,150 @@ const PreInvestmentPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const copyResults = () => {
-    const resultsText = document.getElementById('results').innerText;
-    navigator.clipboard.writeText(resultsText).then(() => {
-      toast.success('Results copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-      toast.error('Failed to copy results');
-    });
+  const downloadPDF = async () => {
+    try {
+      toast.loading('Generating PDF report...', { id: 'pdf-generation' });
+      
+      if (!predictionResult) {
+        toast.error('No prediction results to download');
+        return;
+      }
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Simple helper functions
+      const addTitle = (text, size = 16, color = [0, 0, 0]) => {
+        pdf.setTextColor(...color);
+        pdf.setFontSize(size);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(text, pageWidth/2, yPosition, { align: 'center' });
+        yPosition += size * 0.6;
+      };
+
+      const addSubtitle = (text, size = 12) => {
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(size);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(text, pageWidth/2, yPosition, { align: 'center' });
+        yPosition += size * 0.6;
+      };
+
+      const addSectionHeader = (text) => {
+        yPosition += 10;
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(20, yPosition - 5, pageWidth - 40, 12, 'F');
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(text, 25, yPosition + 2);
+        yPosition += 15;
+      };
+
+      const addLine = (label, value, indent = 25) => {
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${label}:`, indent, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(value, indent + 60, yPosition);
+        yPosition += 6;
+      };
+
+      const addText = (text, indent = 25) => {
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const lines = pdf.splitTextToSize(text, pageWidth - 50);
+        lines.forEach((line, index) => {
+          pdf.text(line, indent, yPosition + (index * 5));
+        });
+        yPosition += lines.length * 5 + 3;
+      };
+
+      const checkNewPage = () => {
+        if (yPosition > pageHeight - 30) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+      };
+
+      // HEADER
+      addTitle('SME SUCCESS PREDICTION REPORT');
+      addSubtitle('Professional Business Analysis');
+      addSubtitle(`Generated: ${new Date().toLocaleDateString()}`);
+      yPosition += 10;
+
+      // BUSINESS INFORMATION
+      addSectionHeader('BUSINESS INFORMATION');
+      addLine('Business Capital', `${parseInt(formData.business_capital).toLocaleString()} RWF`);
+      addLine('Business Sector', formData.business_sector);
+      addLine('Entity Type', formData.entity_type);
+      addLine('Location', formData.business_location);
+      addLine('Capital Source', formData.capital_source);
+      addLine('Number of Employees', formData.number_of_employees);
+      
+      // OWNER INFORMATION
+      addSectionHeader('OWNER INFORMATION');
+      addLine('Owner Age', formData.owner_age);
+      addLine('Business Experience', `${formData.owner_business_experience} years`);
+      addLine('Gender', formData.owner_gender);
+      addLine('Education Level', educationLevels.find(e => e.value == formData.education_level_numeric)?.label || 'Not specified');
+
+      // PREDICTION RESULTS
+      checkNewPage();
+      addSectionHeader('PREDICTION RESULTS');
+      
+      // Main result with color
+      const isSuccess = predictionResult.prediction === 'Success';
+      pdf.setTextColor(isSuccess ? 0 : 200, isSuccess ? 150 : 0, 0);
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      const businessSuccessText = predictionResult.prediction === 'Success' ? 'High Potential' : 
+                                 predictionResult.prediction === 'Moderate Success' ? 'Moderate Potential' : 
+                                 'Needs Improvement';
+      pdf.text(`Business Success: ${businessSuccessText}`, pageWidth/2, yPosition, { align: 'center' });
+      yPosition += 15;
+      
+      pdf.setTextColor(0, 0, 0);
+      addLine('Success Probability', `${(predictionResult.success_probability * 100).toFixed(1)}%`);
+      addLine('Risk Level', predictionResult.risk_level || 'Medium Risk');
+      addLine('Model Version', 'SME Predictor 1.0');
+
+      // RECOMMENDATIONS
+      if (predictionResult.recommendations && predictionResult.recommendations.length > 0) {
+        checkNewPage();
+        addSectionHeader('RECOMMENDATIONS');
+        predictionResult.recommendations.forEach((rec, index) => {
+          addText(`${index + 1}. ${rec}`);
+          yPosition += 2;
+        });
+      }
+
+      // DISCLAIMER
+      checkNewPage();
+      addSectionHeader('DISCLAIMER');
+      addText('This AI prediction is for informational purposes only and should not be considered as professional business advice. Results are based on statistical patterns and may not account for all factors affecting business success. Please consult with professional advisors before making important business decisions.');
+
+      // FOOTER
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - 30, pageHeight - 10);
+      pdf.text('SME Predictor v1.0', 20, pageHeight - 10);
+
+      // Download
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `SME-PreInvestment-Report-${timestamp}.pdf`;
+      
+      pdf.save(filename);
+      toast.success('PDF report downloaded successfully!', { id: 'pdf-generation' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF report', { id: 'pdf-generation' });
+    }
   };
 
   const hideError = () => {
@@ -651,7 +817,7 @@ const PreInvestmentPage = () => {
                   fontWeight: '700',
                   color: predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'
                 }}>
-                  {predictionResult.prediction}
+                  {predictionResult.prediction === 'Success' ? 'High Potential' : predictionResult.prediction === 'Moderate Success' ? 'Moderate Potential' : 'Needs Improvement'}
                 </div>
               </div>
 
@@ -700,6 +866,23 @@ const PreInvestmentPage = () => {
                     : '#ef4444'
                 }}>
                   {predictionResult.risk_level || 'Medium Risk'}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(147, 51, 234, 0.2)',
+                border: '2px solid #9333ea',
+                borderRadius: '15px',
+                padding: '25px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Model Version</div>
+                <div style={{
+                  fontSize: '1.8rem',
+                  fontWeight: '700',
+                  color: '#9333ea'
+                }}>
+                  SME Predictor 1.0
                 </div>
               </div>
             </div>
@@ -813,7 +996,7 @@ const PreInvestmentPage = () => {
                 padding: '25px'
               }}>
                 <h4 style={{ color: '#3b82f6', marginBottom: '15px', fontSize: '1.2rem' }}>
-                  👥 Human Capital
+                  Human Capital
                 </h4>
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -838,7 +1021,7 @@ const PreInvestmentPage = () => {
                 padding: '25px'
               }}>
                 <h4 style={{ color: '#a855f7', marginBottom: '15px', fontSize: '1.2rem' }}>
-                  🌍 Market Factors
+                  Market Factors
                 </h4>
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -891,7 +1074,7 @@ const PreInvestmentPage = () => {
                 }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Strengths</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#22c55e' }}>
-                    {predictionResult.strengths?.length || 2}
+                    {getAssessmentText(predictionResult.strengths?.length || 2, 'strengths')}
                   </div>
                 </div>
                 
@@ -903,7 +1086,7 @@ const PreInvestmentPage = () => {
                 }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Opportunities</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fbbf24' }}>
-                    {predictionResult.opportunities?.length || 3}
+                    {getAssessmentText(predictionResult.opportunities?.length || 3, 'opportunities')}
                   </div>
                 </div>
                 
@@ -915,7 +1098,7 @@ const PreInvestmentPage = () => {
                 }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Risk Areas</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444' }}>
-                    {predictionResult.risks?.length || 2}
+                    {getAssessmentText(predictionResult.risks?.length || 2, 'risks')}
                   </div>
                 </div>
               </div>
@@ -1027,21 +1210,22 @@ const PreInvestmentPage = () => {
               </button>
               
               <button
-                onClick={copyResults}
+                onClick={downloadPDF}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
+                  background: 'linear-gradient(45deg, #22c55e, #16a34a)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   border: 'none',
                   color: 'white',
                   fontFamily: "'Space Mono', monospace",
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(34, 197, 94, 0.3)'
                 }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
               >
-                Copy Results
+                Download Report
               </button>
             </div>
           </div>

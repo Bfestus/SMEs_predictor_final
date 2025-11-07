@@ -61,9 +61,14 @@ const PredictorPage = () => {
                   <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
                     Pre-Investment Analysis
                   </h3>
-                  <p className="text-blue-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
-                    For startup concepts and business ideas seeking investment
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-blue-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      For startup concepts and business ideas seeking investment
+                    </p>
+                    <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-mono">
+                      Random Forest v1.0
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -92,15 +97,9 @@ const PredictorPage = () => {
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                     STARTUP FOCUSED
                   </div>
-                  <motion.div
-                    animate={{ x: hoveredCard === 'pre-investment' ? 5 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-blue-600 group-hover:text-blue-700"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </motion.div>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                    Get Started
+                  </button>
                 </div>
               </div>
             </div>
@@ -127,9 +126,14 @@ const PredictorPage = () => {
                   <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Space Mono', monospace" }}>
                     Existing Business Analysis
                   </h3>
-                  <p className="text-green-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
-                    For operational businesses with financial history
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-green-100 opacity-90" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      For operational businesses with financial history
+                    </p>
+                    <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-mono">
+                      XGBoost v2.0
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -158,15 +162,9 @@ const PredictorPage = () => {
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                     PERFORMANCE FOCUSED
                   </div>
-                  <motion.div
-                    animate={{ x: hoveredCard === 'existing' ? 5 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-green-600 group-hover:text-green-700"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </motion.div>
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                    Get Started
+                  </button>
                 </div>
               </div>
             </div>
