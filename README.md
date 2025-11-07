@@ -494,7 +494,7 @@ Response:
 
 ### Limitations
 
-- Training data from 2019-2023 may not reflect current dynamics
+- Training data from 2021-2025 may not reflect current dynamics
 - No market competition, founder experience, or customer satisfaction data
 - External factors (crises, policy changes) not modeled
 - Edge cases may have lower accuracy
@@ -577,7 +577,7 @@ Response:
 ## Contributors
 
 - Festus Byiringiro - Lead Developer & Data Scientist
-- Project Supervisor - [Supervisor Name]
+- Project Supervisor - [Samiratu Ntosi]
 
 ---
 
