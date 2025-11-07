@@ -576,8 +576,8 @@ Response:
 
 ## Contributors
 
-- Festus Byiringiro - Lead Developer & Data Scientist
-- Project Supervisor - [Samiratu Ntosi]
+- ### Festus Bigirimana - Lead Developer & Data Scientist
+- ### Project Supervisor - Samiratu Ntosi
 
 ---
 
