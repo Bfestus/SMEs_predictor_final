@@ -41,7 +41,7 @@ The SME Success Predictor helps entrepreneurs, investors, and business consultan
 
 ---
 
-## Features
+## Features.
 
 ### Dual Prediction Models
 1. **Pre-Investment Predictor**
