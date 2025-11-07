@@ -324,7 +324,9 @@ python test_api.py
 
 **Screenshots:**
 ```
-[INSERT GALAXY TAB SCREENSHOTS HERE]
+[INSERT GALAXY TAB SCREENSHOTS HERE]<img width="954" height="419" alt="Screenshot 2025-11-07 152149" src="https://github.com/user-attachments/assets/5bde1fe9-9286-45f1-970a-a7559a0757cf" />
+<img width="959" height="422" alt="Screenshot 2025-11-07 152047" src="https://github.com/user-attachments/assets/4e9f1af8-d9cf-40e8-a63d-653d8374f638" />
+
 ```
 ```bash
 curl -X POST https://smes-predictor-final.onrender.com/predict \
