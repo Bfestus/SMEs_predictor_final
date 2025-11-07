@@ -2,14 +2,23 @@
 
 An AI-powered web application that predicts the success probability of Small and Medium Enterprises (SMEs) in Rwanda using Machine Learning and SHAP-based explainable AI.
 
+## Deployed Application
+
+**Live API:** https://smes-predictor-final.onrender.com  
+**API Documentation:** https://smes-predictor-final.onrender.com/docs
+
+## Demo Video
+
+**Video Link:** [INSERT YOUR 5-MINUTE VIDEO LINK HERE]
+
+---
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Installation & Setup](#installation--setup)
 - [Running the Application](#running-the-application)
-- [Deployed Version](#deployed-version)
-- [Demo Video](#demo-video)
 - [Testing Results](#testing-results)
 - [Project Structure](#project-structure)
 - [Analysis](#analysis)
@@ -160,29 +169,6 @@ Automatically connects to deployed API.
 
 ---
 
-## Deployed Version
-
-**API:** https://smes-predictor-final.onrender.com  
-**API Documentation:** https://smes-predictor-final.onrender.com/docs
-
-**Note:** First request may take 30-60 seconds (cold start on free tier).
-
----
-
-## Demo Video
-
-**Video Link:** [INSERT YOUR 5-MINUTE VIDEO LINK HERE]
-
-**Content Coverage:**
-- Application overview and navigation
-- Pre-Investment prediction demo
-- Existing Business prediction demo
-- SHAP recommendations interpretation
-- PDF report generation
-- Responsive design demonstration
-
----
-
 ## Testing Results
 
 ### 1. Testing Strategies
@@ -299,9 +285,10 @@ python test_api.py
 - PDF Generation: 0.6s
 
 **Screenshots:**
-```
-[INSERT LAPTOP SCREENSHOTS HERE]
-```
+
+![Laptop Screenshot 1](docs/laptop/Screenshot%202025-11-07%20152047.png)
+![Laptop Screenshot 2](docs/laptop/Screenshot%202025-11-07%20152149.png)
+![Laptop Screenshot 3](docs/laptop/Screenshot%202025-11-07%20155939.png)
 
 #### iPhone 12 Pro
 **Performance:**
@@ -311,9 +298,10 @@ python test_api.py
 - PDF Generation: 1.1s
 
 **Screenshots:**
-```
-[INSERT IPHONE 12 PRO SCREENSHOTS HERE]
-```
+
+![iPhone Screenshot 1](docs/iphone/WhatsApp%20Image%202025-11-07%20at%2015.29.08_a7123d45.jpg)
+![iPhone Screenshot 2](docs/iphone/WhatsApp%20Image%202025-11-07%20at%2015.29.09_bebfa8d4.jpg)
+![iPhone Screenshot 3](docs/iphone/WhatsApp%20Image%202025-11-07%20at%2015.29.10_4a374478.jpg)
 
 #### Galaxy Tab
 **Performance:**
@@ -323,9 +311,12 @@ python test_api.py
 - PDF Generation: 0.9s
 
 **Screenshots:**
-```
-[INSERT GALAXY TAB SCREENSHOTS HERE]
-```
+
+![Galaxy Tab Screenshot 1](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.27_9f3cc21b.jpg)
+![Galaxy Tab Screenshot 2](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.28_655565d2.jpg)
+![Galaxy Tab Screenshot 3](docs/tablet/WhatsApp%20Image%202025-11-07%20at%2015.29.28_f35c3a01.jpg)
+
+---
 ```bash
 curl -X POST https://smes-predictor-final.onrender.com/predict \
   -H "Content-Type: application/json" \
