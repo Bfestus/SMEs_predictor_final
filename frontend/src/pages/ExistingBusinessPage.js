@@ -93,9 +93,43 @@ const ExistingBusinessPage = () => {
     'LIMITED LIABILITY COMPANY', 'PARTNERSHIP', 'SOLE PROPRIETORSHIP'
   ];
 
+  // Format number with thousand separators
+  const formatNumber = (value) => {
+    if (!value) return '';
+    // Remove all non-digits
+    const numericValue = value.replace(/\D/g, '');
+    // Add thousand separators
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // Remove formatting to get raw number
+  const parseNumber = (value) => {
+    return value.replace(/,/g, '');
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Check if this is a numeric field that needs formatting
+    const numericFields = [
+      'business_capital',
+      'turnover_first_year',
+      'turnover_second_year', 
+      'turnover_third_year',
+      'turnover_fourth_year',
+      'employment_first_year',
+      'employment_second_year',
+      'employment_third_year',
+      'employment_fourth_year'
+    ];
+    
+    if (numericFields.includes(name)) {
+      // Format the number with commas for display
+      const formattedValue = formatNumber(value);
+      setFormData(prev => ({ ...prev, [name]: formattedValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const resetForm = () => {
@@ -331,19 +365,19 @@ const ExistingBusinessPage = () => {
       const apiUrl = await API_CONFIG.getApiUrl();
       
       const processedData = {
-        business_capital: parseFloat(formData.business_capital),
+        business_capital: parseFloat(parseNumber(formData.business_capital)),
         business_sector: formData.business_sector,
         entity_type: formData.entity_type,
         business_location: formData.business_location,
         capital_source: formData.capital_source,
-        turnover_first_year: parseFloat(formData.turnover_first_year) || 0,
-        turnover_second_year: parseFloat(formData.turnover_second_year) || 0,
-        turnover_third_year: parseFloat(formData.turnover_third_year) || 0,
-        turnover_fourth_year: parseFloat(formData.turnover_fourth_year) || 0,
-        employment_first_year: parseInt(formData.employment_first_year) || 0,
-        employment_second_year: parseInt(formData.employment_second_year) || 0,
-        employment_third_year: parseInt(formData.employment_third_year) || 0,
-        employment_fourth_year: parseInt(formData.employment_fourth_year) || 0
+        turnover_first_year: parseFloat(parseNumber(formData.turnover_first_year)) || 0,
+        turnover_second_year: parseFloat(parseNumber(formData.turnover_second_year)) || 0,
+        turnover_third_year: parseFloat(parseNumber(formData.turnover_third_year)) || 0,
+        turnover_fourth_year: parseFloat(parseNumber(formData.turnover_fourth_year)) || 0,
+        employment_first_year: parseInt(parseNumber(formData.employment_first_year)) || 0,
+        employment_second_year: parseInt(parseNumber(formData.employment_second_year)) || 0,
+        employment_third_year: parseInt(parseNumber(formData.employment_third_year)) || 0,
+        employment_fourth_year: parseInt(parseNumber(formData.employment_fourth_year)) || 0
       };
 
       console.log('Sending data to API:', processedData);
@@ -360,7 +394,8 @@ const ExistingBusinessPage = () => {
         
         console.log('API Response:', response.data);
         
-        if (response.data.success) {
+        // Check if response has prediction data (even if success is false)
+        if (response.data && response.data.prediction) {
           toast.success('Prediction completed successfully!');
           setPredictionResult(response.data);
           setShowResults(true);
@@ -397,7 +432,8 @@ const ExistingBusinessPage = () => {
           
           console.log('Fallback API Response:', fallbackResponse.data);
           
-          if (fallbackResponse.data.success) {
+          // Check if response has prediction data (even if success is false)
+          if (fallbackResponse.data && fallbackResponse.data.prediction) {
             toast.success('Prediction completed successfully!', { id: 'api-fallback' });
             setPredictionResult(fallbackResponse.data);
             setShowResults(true);
@@ -527,12 +563,12 @@ const ExistingBusinessPage = () => {
                     Business Capital (RWF) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="business_capital"
                     value={formData.business_capital}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 1200000"
+                    placeholder="e.g., 1,200,000"
                     style={{
                       padding: '12px 16px',
                       border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -692,12 +728,12 @@ const ExistingBusinessPage = () => {
                       {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Revenue (RWF) *
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name={`turnover_${year}_year`}
                       value={formData[`turnover_${year}_year`]}
                       onChange={handleInputChange}
                       required
-                      placeholder={`e.g., ${12000000 + (index * 6000000)}`}
+                      placeholder={`e.g., ${(12000000 + (index * 6000000)).toLocaleString()}`}
                       style={{
                         padding: '12px 16px',
                         border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -737,7 +773,7 @@ const ExistingBusinessPage = () => {
                       {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Employees
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name={`employment_${year}_year`}
                       value={formData[`employment_${year}_year`]}
                       onChange={handleInputChange}

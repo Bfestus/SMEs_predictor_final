@@ -100,9 +100,33 @@ const PreInvestmentPage = () => {
     { value: 4, label: '4 - Higher education' }
   ];
 
+  // Format number with thousand separators
+  const formatNumber = (value) => {
+    if (!value) return '';
+    // Remove all non-digits
+    const numericValue = value.replace(/\D/g, '');
+    // Add thousand separators
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // Remove formatting to get raw number
+  const parseNumber = (value) => {
+    return value.replace(/,/g, '');
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Check if this is a numeric field that needs formatting
+    const numericFields = ['business_capital', 'number_of_employees'];
+    
+    if (numericFields.includes(name)) {
+      // Format the number with commas for display
+      const formattedValue = formatNumber(value);
+      setFormData(prev => ({ ...prev, [name]: formattedValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Helper function to convert numeric assessment counts to descriptive words
@@ -308,10 +332,10 @@ const PreInvestmentPage = () => {
     try {
       const processedData = {
         ...formData,
-        business_capital: parseInt(formData.business_capital),
+        business_capital: parseInt(parseNumber(formData.business_capital)),
         owner_age: parseInt(formData.owner_age),
         owner_business_experience: parseInt(formData.owner_business_experience),
-        number_of_employees: parseInt(formData.number_of_employees),
+        number_of_employees: parseInt(parseNumber(formData.number_of_employees)),
         education_level_numeric: parseInt(formData.education_level_numeric)
       };
 
@@ -328,7 +352,8 @@ const PreInvestmentPage = () => {
         
         console.log('API Response:', response.data);
         
-        if (response.data.success) {
+        // Check if response has prediction data (even if success is false)
+        if (response.data && response.data.prediction) {
           toast.success('Prediction completed successfully!');
           setPredictionResult(response.data);
           setShowResults(true);
@@ -362,7 +387,8 @@ const PreInvestmentPage = () => {
             
             console.log('Deployed API Response:', response.data);
             
-            if (response.data.success) {
+            // Check if response has prediction data (even if success is false)
+            if (response.data && response.data.prediction) {
               toast.success('Prediction completed successfully!', { id: 'api-fallback' });
               setPredictionResult(response.data);
               setShowResults(true);
@@ -500,13 +526,12 @@ const PreInvestmentPage = () => {
                     Business Capital (RWF) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="business_capital"
                     value={formData.business_capital}
                     onChange={handleInputChange}
                     required
-                    min="0"
-                    placeholder="e.g., 1200000"
+                    placeholder="e.g., 1,200,000"
                     style={{
                       padding: '12px 16px',
                       border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -524,12 +549,11 @@ const PreInvestmentPage = () => {
                     Number of Employees *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="number_of_employees"
                     value={formData.number_of_employees}
                     onChange={handleInputChange}
                     required
-                    min="0"
                     placeholder="e.g., 5"
                     style={{
                       padding: '12px 16px',
