@@ -116,22 +116,6 @@ const HomePage = () => {
                   Contact Us
                 </Link>
               </div>
-
-              {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600" style={{ fontFamily: 'Space Mono, monospace' }}>93.5%</div>
-                  <div className="text-sm text-gray-600">Accuracy</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-purple-600" style={{ fontFamily: 'Space Mono, monospace' }}>30</div>
-                  <div className="text-sm text-gray-600">Districts</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-pink-600" style={{ fontFamily: 'Space Mono, monospace' }}>19</div>
-                  <div className="text-sm text-gray-600">Sectors</div>
-                </div>
-              </div>
             </div>
 
             {/* Hero Visual */}

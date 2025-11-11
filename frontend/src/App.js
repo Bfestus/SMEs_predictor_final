@@ -9,6 +9,8 @@ import PreInvestmentPage from './pages/PreInvestmentPage';
 import ExistingBusinessPage from './pages/ExistingBusinessPage';
 import ContactPage from './pages/ContactPage';
 import ResultPage from './pages/ResultPage';
+import ResourcesPage from './pages/ResourcesPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
             <Route path="/predictor/pre-investment" element={<PreInvestmentPage />} />
             <Route path="/predictor/existing-business" element={<ExistingBusinessPage />} />
             <Route path="/result" element={<ResultPage />} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Routes>
         </main>

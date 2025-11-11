@@ -95,12 +95,12 @@ const Footer = () => {
             © 2025 SME Success Predictor. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-sm hover:text-white transition-colors" style={{ 
+            <Link to="/privacy" className="text-sm hover:text-white transition-colors" style={{ 
               color: '#cbd5e1',
               fontFamily: 'Space Mono, monospace'
             }}>
               Privacy Policy
-            </a>
+            </Link>
             <a href="#" className="text-sm hover:text-white transition-colors" style={{ 
               color: '#cbd5e1',
               fontFamily: 'Space Mono, monospace'
