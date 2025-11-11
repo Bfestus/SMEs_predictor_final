@@ -500,7 +500,9 @@ const PreInvestmentPage = () => {
           borderRadius: '20px',
           padding: '40px',
           marginBottom: '30px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          width: '100%',
+          boxSizing: 'border-box'
         }}>
           <form onSubmit={handleSubmit}>
             {/* Business Information Section */}
@@ -518,7 +520,7 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
                 gap: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -626,7 +628,7 @@ const PreInvestmentPage = () => {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
                 gap: '20px',
                 marginTop: '20px'
               }}>
@@ -703,7 +705,7 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
                 gap: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1006,7 +1008,7 @@ const PreInvestmentPage = () => {
                 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                   gap: '20px'
                 }}>
                   {Object.entries(predictionResult.feature_importance)
@@ -1058,7 +1060,7 @@ const PreInvestmentPage = () => {
             {/* Detailed Factor Analysis */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
               gap: '20px',
               marginBottom: '30px'
             }}>
@@ -1208,7 +1210,10 @@ const PreInvestmentPage = () => {
                 background: 'rgba(255, 255, 255, 0.1)',
                 borderRadius: '15px',
                 padding: '25px',
-                marginBottom: '30px'
+                marginBottom: '30px',
+                overflow: 'hidden',
+                width: '100%',
+                boxSizing: 'border-box'
               }}>
                 <h3 style={{
                   color: '#22c55e',
@@ -1222,38 +1227,44 @@ const PreInvestmentPage = () => {
                 </h3>
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                  gap: '15px'
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+                  gap: '15px',
+                  width: '100%'
                 }}>
                   {predictionResult.recommendations.map((rec, index) => (
                     <div key={index} style={{
                       background: 'rgba(255, 255, 255, 0.05)',
                       border: '1px solid rgba(34, 197, 94, 0.3)',
                       borderRadius: '10px',
-                      padding: '20px',
-                      position: 'relative'
+                      padding: '40px 15px 15px 15px',
+                      position: 'relative',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}>
                       <div style={{
                         position: 'absolute',
-                        top: '15px',
-                        right: '15px',
+                        top: '8px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
                         background: '#22c55e',
                         color: 'white',
                         borderRadius: '50%',
-                        width: '25px',
-                        height: '25px',
+                        width: '28px',
+                        height: '28px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '0.8rem',
+                        fontSize: '0.85rem',
                         fontWeight: '700'
                       }}>
                         {index + 1}
                       </div>
                       <div style={{
-                        fontSize: '1rem',
+                        fontSize: '0.9rem',
                         lineHeight: '1.5',
-                        paddingRight: '35px'
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        hyphens: 'auto'
                       }}>
                         {rec}
                       </div>
@@ -1262,6 +1273,42 @@ const PreInvestmentPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Disclaimer Message */}
+            <div style={{
+              background: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: '10px',
+              padding: '20px',
+              marginTop: '30px',
+              textAlign: 'center'
+            }}>
+              <h4 style={{ 
+                color: '#ffc107', 
+                marginBottom: '15px',
+                fontSize: '1.1rem',
+                fontWeight: '700'
+              }}>
+                Important Disclaimer
+              </h4>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                lineHeight: '1.6',
+                margin: '0 0 10px 0',
+                opacity: 0.9
+              }}>
+                This AI prediction is for informational purposes only and should not be considered as professional business advice. 
+                Results are based on statistical patterns and may not account for all factors affecting business success.
+              </p>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                lineHeight: '1.6',
+                margin: '0',
+                opacity: 0.9
+              }}>
+                <strong>Please consult with professional business consultants, financial advisors, or industry experts before making important business decisions.</strong>
+              </p>
+            </div>
 
             {/* Action Buttons */}
             <div style={{

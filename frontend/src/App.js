@@ -10,6 +10,7 @@ import ExistingBusinessPage from './pages/ExistingBusinessPage';
 import ContactPage from './pages/ContactPage';
 import ResultPage from './pages/ResultPage';
 import ResourcesPage from './pages/ResourcesPage';
+import TutorialsPage from './pages/TutorialsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
             <Route path="/predictor/existing-business" element={<ExistingBusinessPage />} />
             <Route path="/result" element={<ResultPage />} />
             <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/tutorials" element={<TutorialsPage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Routes>

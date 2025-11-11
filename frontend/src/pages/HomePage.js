@@ -109,11 +109,11 @@ const HomePage = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Link>
                 <Link
-                  to="/contact"
+                  to="/tutorials"
                   className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-gray-50 hover:border-gray-400 text-center"
                   style={{ fontFamily: 'Space Mono, monospace' }}
                 >
-                  Contact Us
+                  How It Works
                 </Link>
               </div>
             </div>
@@ -362,7 +362,7 @@ const HomePage = () => {
                 Get Started Now
               </Link>
               <Link
-                to="/services"
+                to="/tutorials"
                 className="btn-secondary text-sm px-8 py-4"
               >
                 Learn More

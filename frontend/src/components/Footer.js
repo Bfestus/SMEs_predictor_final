@@ -45,7 +45,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4 text-white" style={{ fontFamily: 'Space Mono, monospace' }}>Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="hover:text-white transition-colors" style={{ 
+                <Link to="/" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
                   color: '#e2e8f0',
                   fontFamily: 'Space Mono, monospace'
                 }}>
@@ -53,7 +53,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/predictor" className="hover:text-white transition-colors" style={{ 
+                <Link to="/predictor" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
                   color: '#e2e8f0',
                   fontFamily: 'Space Mono, monospace'
                 }}>
@@ -61,7 +61,31 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-white transition-colors" style={{ 
+                <Link to="/tutorials" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
+                  color: '#e2e8f0',
+                  fontFamily: 'Space Mono, monospace'
+                }}>
+                  Tutorials
+                </Link>
+              </li>
+              <li>
+                <Link to="/resources" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
+                  color: '#e2e8f0',
+                  fontFamily: 'Space Mono, monospace'
+                }}>
+                  Resources
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
+                  color: '#e2e8f0',
+                  fontFamily: 'Space Mono, monospace'
+                }}>
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors" style={{ 
                   color: '#e2e8f0',
                   fontFamily: 'Space Mono, monospace'
                 }}>
