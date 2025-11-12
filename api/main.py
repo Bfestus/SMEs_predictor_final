@@ -163,21 +163,21 @@ async def startup_event():
             xgb_model = joblib.load(EXISTING_MODEL_PATH)
             print(f"✓ Existing business XGBoost model loaded from {EXISTING_MODEL_PATH}")
         else:
-            print(f"⚠️ Existing business model not found: {EXISTING_MODEL_PATH}")
+            print(f" Existing business model not found: {EXISTING_MODEL_PATH}")
         
         # Load feature scaler
         if os.path.exists(EXISTING_SCALER_PATH):
             feature_scaler = joblib.load(EXISTING_SCALER_PATH)
             print(f"✓ Feature scaler loaded from {EXISTING_SCALER_PATH}")
         else:
-            print(f"⚠️ Feature scaler not found: {EXISTING_SCALER_PATH}")
+            print(f" Feature scaler not found: {EXISTING_SCALER_PATH}")
         
         # Load label encoders
         if os.path.exists(EXISTING_ENCODERS_PATH):
             label_encoders = joblib.load(EXISTING_ENCODERS_PATH)
             print(f"✓ Label encoders loaded from {EXISTING_ENCODERS_PATH}")
         else:
-            print(f"⚠️ Label encoders not found: {EXISTING_ENCODERS_PATH}")
+            print(f" Label encoders not found: {EXISTING_ENCODERS_PATH}")
         
         # Load metadata
         if os.path.exists(EXISTING_METADATA_PATH):
@@ -185,7 +185,7 @@ async def startup_event():
                 model_metadata = json.load(f)
             print(f"✓ Model metadata loaded from {EXISTING_METADATA_PATH}")
         else:
-            print(f"⚠️ Metadata file not found: {EXISTING_METADATA_PATH}")
+            print(f" Metadata file not found: {EXISTING_METADATA_PATH}")
         
         # Define feature names for existing business (must match training order)
         feature_names = [
@@ -206,7 +206,7 @@ async def startup_event():
             'employment_growth_encoded'
         ]
         
-        print("🎯 Combined SME Predictor API startup complete!")
+        print(" Combined SME Predictor API startup complete!")
         
     except Exception as e:
         print(f"Error loading existing business model components: {e}")
@@ -929,9 +929,9 @@ async def get_existing_business_sample():
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting Combined SME Predictor API...")
-    print("📊 New Business API: /predict, /batch-predict, /categories")
-    print("📈 Existing Business API: /predict-existing-business, /health-existing")
-    print("📋 Sample Data: /sample-new-business, /sample-existing-business")
-    print("🔗 API Documentation: http://localhost:8000/docs")
+    print(" Starting Combined SME Predictor API...")
+    print(" New Business API: /predict, /batch-predict, /categories")
+    print(" Existing Business API: /predict-existing-business, /health-existing")
+    print(" Sample Data: /sample-new-business, /sample-existing-business")
+    print(" API Documentation: http://localhost:8000/docs")
     uvicorn.run(app, host="0.0.0.0", port=8000)
