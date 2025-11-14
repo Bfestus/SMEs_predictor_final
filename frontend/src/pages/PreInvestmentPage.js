@@ -71,10 +71,33 @@ const PreInvestmentPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Responsive helpers
-  const isMobile = windowWidth <= 768;
-  const isTablet = windowWidth <= 1024 && windowWidth > 768;
+  // Responsive helpers - adjusted for better mobile detection
+  const isMobile = windowWidth <= 480; // Covers most mobile devices including iPhone 12 Pro (390px)
+  const isTablet = windowWidth <= 1024 && windowWidth > 480;
   const isDesktop = windowWidth > 1024;
+
+  // Common input style for consistent mobile-friendly inputs
+  const inputStyle = {
+    padding: isMobile ? '12px 14px' : '14px 16px',
+    border: '2px solid #e2e8f0',
+    borderRadius: '8px',
+    background: '#ffffff',
+    color: '#2d3748',
+    fontFamily: "'Space Mono', monospace",
+    fontSize: isMobile ? '16px' : '14px', // 16px prevents zoom on iOS
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+    width: '100%',
+    boxSizing: 'border-box',
+    minHeight: isMobile ? '44px' : 'auto' // iOS touch target minimum
+  };
+
+  // Select style (same as input but with cursor pointer)
+  const selectStyle = {
+    ...inputStyle,
+    cursor: 'pointer'
+  };
 
   const capitalSources = [
     'Personal Savings', 'Bank Loan', 'Business Partner', 'Microfinance',
@@ -570,11 +593,15 @@ const PreInvestmentPage = () => {
       background: 'linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #1e40af 100%)',
       color: 'white',
       minHeight: '100vh',
-      padding: isMobile ? '10px' : isTablet ? '15px' : '20px'
+      padding: isMobile ? '8px' : isTablet ? '15px' : '20px',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
-        maxWidth: isMobile ? '100%' : isTablet ? '95%' : '1200px', 
-        margin: '0 auto' 
+        maxWidth: isMobile ? 'calc(100% - 4px)' : isTablet ? '95%' : '1200px', 
+        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: isMobile ? '30px' : '40px' }}>
@@ -599,12 +626,14 @@ const PreInvestmentPage = () => {
         <div style={{
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
-          borderRadius: isMobile ? '15px' : '20px',
-          padding: isMobile ? '20px' : isTablet ? '30px' : '40px',
-          marginBottom: isMobile ? '20px' : '30px',
+          borderRadius: isMobile ? '12px' : '20px',
+          padding: isMobile ? '16px' : isTablet ? '30px' : '40px',
+          marginBottom: isMobile ? '16px' : '30px',
           border: '1px solid rgba(255, 255, 255, 0.2)',
           width: '100%',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          minWidth: 0,
+          overflow: 'hidden'
         }}>
           <form onSubmit={handleSubmit}>
             {/* Business Information Section */}
@@ -636,18 +665,7 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="e.g., 1,200,000"
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
@@ -662,18 +680,7 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="e.g., 5"
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
@@ -686,19 +693,7 @@ const PreInvestmentPage = () => {
                     value={formData.capital_source}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select capital source...</option>
                     {capitalSources.map(source => (
@@ -718,19 +713,7 @@ const PreInvestmentPage = () => {
                     value={formData.entity_type}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select entity type...</option>
                     {entityTypes.map(type => (
@@ -757,19 +740,7 @@ const PreInvestmentPage = () => {
                     value={formData.business_sector}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select business sector...</option>
                     {businessSectors.map(sector => (
@@ -789,19 +760,7 @@ const PreInvestmentPage = () => {
                     value={formData.business_location}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select district...</option>
                     {businessLocations.map(location => (
@@ -845,18 +804,7 @@ const PreInvestmentPage = () => {
                     min="18"
                     max="80"
                     placeholder="e.g., 35"
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
@@ -873,18 +821,7 @@ const PreInvestmentPage = () => {
                     min="0"
                     max="50"
                     placeholder="e.g., 5"
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
@@ -897,19 +834,7 @@ const PreInvestmentPage = () => {
                     value={formData.owner_gender}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select gender...</option>
                     <option value="M" style={{ background: '#ffffff', color: '#2d3748' }}>Male</option>
@@ -926,19 +851,7 @@ const PreInvestmentPage = () => {
                     value={formData.education_level_numeric}
                     onChange={handleInputChange}
                     required
-                    style={{
-                      padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      color: '#2d3748',
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer'
-                    }}
+                    style={selectStyle}
                   >
                     <option value="">Select education level...</option>
                     {educationLevels.map(level => (

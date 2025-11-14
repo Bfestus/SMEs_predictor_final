@@ -66,9 +66,9 @@ const ExistingBusinessPage = () => {
   const [showError, setShowError] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-  // Responsive design helpers
-  const isMobile = windowWidth <= 768;
-  const isTablet = windowWidth <= 1024 && windowWidth > 768;
+  // Responsive design helpers - adjusted for better mobile detection
+  const isMobile = windowWidth <= 480; // Covers most mobile devices including iPhone 12 Pro (390px)
+  const isTablet = windowWidth <= 1024 && windowWidth > 480;
   const isDesktop = windowWidth > 1024;
 
   // Handle window resize for responsive design
