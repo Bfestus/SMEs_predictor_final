@@ -58,6 +58,24 @@ const PreInvestmentPage = () => {
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
+  // Responsive state
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Update window width on resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Responsive helpers
+  const isMobile = windowWidth <= 768;
+  const isTablet = windowWidth <= 1024 && windowWidth > 768;
+  const isDesktop = windowWidth > 1024;
+
   const capitalSources = [
     'Personal Savings', 'Bank Loan', 'Business Partner', 'Microfinance',
     'Family/Friends', 'Government Grant', 'Foreign Investment', 
@@ -250,7 +268,7 @@ const PreInvestmentPage = () => {
 
       // BUSINESS INFORMATION
       addSectionHeader('BUSINESS INFORMATION');
-      addLine('Business Capital', `${parseInt(formData.business_capital).toLocaleString()} RWF`);
+      addLine('Business Capital', `${parseNumber(formData.business_capital).toLocaleString()} RWF`);
       addLine('Business Sector', formData.business_sector);
       addLine('Entity Type', formData.entity_type);
       addLine('Location', formData.business_location);
@@ -268,7 +286,7 @@ const PreInvestmentPage = () => {
       checkNewPage();
       addSectionHeader('PREDICTION RESULTS');
       
-      // Main result with color
+      // Main results cards
       const isSuccess = predictionResult.prediction === 'Success';
       pdf.setTextColor(isSuccess ? 0 : 200, isSuccess ? 150 : 0, 0);
       pdf.setFontSize(18);
@@ -280,18 +298,97 @@ const PreInvestmentPage = () => {
       yPosition += 15;
       
       pdf.setTextColor(0, 0, 0);
-      addLine('Success Probability', `${(predictionResult.success_probability * 100).toFixed(1)}%`);
-      addLine('Risk Level', predictionResult.risk_level || 'Medium Risk');
-      addLine('Model Version', 'SME Predictor 1.0');
+      addLine('Success Probability', `${((predictionResult.success_probability || 0) * 100).toFixed(1)}%`);
+      yPosition += 5;
 
-      // RECOMMENDATIONS
+      // FACTOR ANALYSIS
+      addSectionHeader('DETAILED FACTOR ANALYSIS');
+      
+      // Financial Factors
+      pdf.setTextColor(34, 197, 94);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Financial Factors', 25, yPosition);
+      yPosition += 8;
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      addLine('Business Capital', 'Strong', 35);
+      addLine('Capital Source', 'Medium', 35);
+      addLine('Entity Structure', 'Low', 35);
+      yPosition += 5;
+
+      // Human Capital
+      pdf.setTextColor(59, 130, 246);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Human Capital', 25, yPosition);
+      yPosition += 8;
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      addLine('Owner Experience', 'High', 35);
+      addLine('Education Level', 'Medium', 35);
+      addLine('Age Factor', 'Medium', 35);
+      yPosition += 10;
+
+      // BUSINESS ANALYTICS DASHBOARD DATA
+      checkNewPage();
+      addSectionHeader('BUSINESS ANALYTICS DASHBOARD');
+      
+      // Calculate metrics based on form data (matching frontend logic)
+      const capitalScore = formData.business_capital ? 
+        Math.min(100, Math.max(30, (parseNumber(formData.business_capital) / 5000000) * 100)) : 45;
+      const experienceScore = formData.owner_business_experience ? 
+        Math.min(100, Math.max(20, (parseInt(formData.owner_business_experience) / 15) * 100)) : 50;
+      const educationScore = formData.education_level_numeric ? 
+        Math.min(100, Math.max(30, parseInt(formData.education_level_numeric) * 20)) : 55;
+      const finalScore = (predictionResult.success_probability || 0) * 100;
+
+      addLine('Capital Base Score', `${capitalScore.toFixed(0)}%`);
+      addLine('Experience Score', `${experienceScore.toFixed(0)}%`);
+      addLine('Education Score', `${educationScore.toFixed(0)}%`);
+      addLine('Final Prediction Score', `${finalScore.toFixed(0)}%`);
+      yPosition += 10;
+
+      // Success Factors Distribution
+      addSectionHeader('SUCCESS FACTORS DISTRIBUTION');
+      
+      const capitalWeight = formData.business_capital ? 
+        Math.min(30, Math.max(10, (parseNumber(formData.business_capital) / 5000000) * 30)) : 15;
+      const experienceWeight = formData.owner_business_experience ? 
+        Math.min(25, Math.max(8, (parseInt(formData.owner_business_experience) / 15) * 25)) : 12;
+      const educationWeight = formData.education_level_numeric ? 
+        Math.min(20, Math.max(5, parseInt(formData.education_level_numeric) * 4)) : 10;
+      const marketWeight = formData.business_sector && formData.business_location ? 18 : 12;
+      const structureWeight = formData.entity_type && formData.capital_source ? 15 : 8;
+      
+      const totalWeight = capitalWeight + experienceWeight + educationWeight + marketWeight + structureWeight;
+      
+      addLine('Capital Factor', `${((capitalWeight / totalWeight) * 100).toFixed(0)}%`);
+      addLine('Experience Factor', `${((experienceWeight / totalWeight) * 100).toFixed(0)}%`);
+      addLine('Education Factor', `${((educationWeight / totalWeight) * 100).toFixed(0)}%`);
+      addLine('Market Factor', `${((marketWeight / totalWeight) * 100).toFixed(0)}%`);
+      addLine('Structure Factor', `${((structureWeight / totalWeight) * 100).toFixed(0)}%`);
+      yPosition += 10;
+
+      // SHAP AI-POWERED INSIGHTS
       if (predictionResult.recommendations && predictionResult.recommendations.length > 0) {
         checkNewPage();
-        addSectionHeader('RECOMMENDATIONS');
+        addSectionHeader('SHAP AI-POWERED INSIGHTS');
+        addText('Machine learning explanations based on feature importance analysis:');
+        yPosition += 5;
+        
         predictionResult.recommendations.forEach((rec, index) => {
           addText(`${index + 1}. ${rec}`);
           yPosition += 2;
+          checkNewPage();
         });
+        
+        yPosition += 5;
+        addText('SHAP (SHapley Additive exPlanations) analyzes how each business factor contributes to your success prediction. These insights are generated by examining feature importance in the machine learning model, providing data-driven recommendations specific to your business profile.');
       }
 
       // DISCLAIMER
@@ -470,36 +567,41 @@ const PreInvestmentPage = () => {
   return (
     <div style={{
       fontFamily: "'Space Mono', monospace",
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #1e40af 100%)',
       color: 'white',
       minHeight: '100vh',
-      padding: '20px'
+      padding: isMobile ? '10px' : isTablet ? '15px' : '20px'
     }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ 
+        maxWidth: isMobile ? '100%' : isTablet ? '95%' : '1200px', 
+        margin: '0 auto' 
+      }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: isMobile ? '30px' : '40px' }}>
           <h1 style={{
-            fontSize: '2.5rem',
+            fontSize: isMobile ? '2rem' : isTablet ? '2.2rem' : '2.5rem',
             marginBottom: '10px',
-            background: 'linear-gradient(45deg, #22c55e, #10b981)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            color: 'white',
+            fontWeight: '800'
           }}>
             Pre-Investment Success Predictor
           </h1>
-          <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
+          <p style={{ 
+            fontSize: isMobile ? '1rem' : '1.1rem', 
+            opacity: 0.8,
+            padding: isMobile ? '0 10px' : '0'
+          }}>
             AI-powered analysis for your business idea with personalized recommendations
           </p>
         </div>
 
         {/* Form Container */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '20px',
-          padding: '40px',
-          marginBottom: '30px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: isMobile ? '15px' : '20px',
+          padding: isMobile ? '20px' : isTablet ? '30px' : '40px',
+          marginBottom: isMobile ? '20px' : '30px',
           border: '1px solid rgba(255, 255, 255, 0.2)',
           width: '100%',
           boxSizing: 'border-box'
@@ -520,11 +622,11 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
-                gap: '20px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+                gap: isMobile ? '15px' : '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Capital (RWF) *
                   </label>
                   <input
@@ -535,19 +637,22 @@ const PreInvestmentPage = () => {
                     required
                     placeholder="e.g., 1,200,000"
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Number of Employees *
                   </label>
                   <input
@@ -558,19 +663,22 @@ const PreInvestmentPage = () => {
                     required
                     placeholder="e.g., 5"
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Capital Source *
                   </label>
                   <select
@@ -579,18 +687,22 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select capital source...</option>
                     {capitalSources.map(source => (
-                      <option key={source} value={source} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={source} value={source} style={{ background: '#ffffff', color: '#2d3748' }}>
                         {source}
                       </option>
                     ))}
@@ -598,7 +710,7 @@ const PreInvestmentPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Entity Type *
                   </label>
                   <select
@@ -607,18 +719,22 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select entity type...</option>
                     {entityTypes.map(type => (
-                      <option key={type} value={type} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={type} value={type} style={{ background: '#ffffff', color: '#2d3748' }}>
                         {type}
                       </option>
                     ))}
@@ -633,7 +749,7 @@ const PreInvestmentPage = () => {
                 marginTop: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Sector *
                   </label>
                   <select
@@ -642,18 +758,22 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select business sector...</option>
                     {businessSectors.map(sector => (
-                      <option key={sector} value={sector} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={sector} value={sector} style={{ background: '#ffffff', color: '#2d3748' }}>
                         {sector}
                       </option>
                     ))}
@@ -661,7 +781,7 @@ const PreInvestmentPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Location (District) *
                   </label>
                   <select
@@ -670,18 +790,22 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select district...</option>
                     {businessLocations.map(location => (
-                      <option key={location} value={location} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={location} value={location} style={{ background: '#ffffff', color: '#2d3748' }}>
                         {location}
                       </option>
                     ))}
@@ -709,7 +833,7 @@ const PreInvestmentPage = () => {
                 gap: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Owner Age *
                   </label>
                   <input
@@ -722,19 +846,22 @@ const PreInvestmentPage = () => {
                     max="80"
                     placeholder="e.g., 35"
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Experience (Years) *
                   </label>
                   <input
@@ -747,19 +874,22 @@ const PreInvestmentPage = () => {
                     max="50"
                     placeholder="e.g., 5"
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Owner Gender *
                   </label>
                   <select
@@ -768,23 +898,27 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select gender...</option>
-                    <option value="M" style={{ background: '#1e293b', color: 'white' }}>Male</option>
-                    <option value="F" style={{ background: '#1e293b', color: 'white' }}>Female</option>
+                    <option value="M" style={{ background: '#ffffff', color: '#2d3748' }}>Male</option>
+                    <option value="F" style={{ background: '#ffffff', color: '#2d3748' }}>Female</option>
                   </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Education Level *
                   </label>
                   <select
@@ -793,18 +927,22 @@ const PreInvestmentPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="">Select education level...</option>
                     {educationLevels.map(level => (
-                      <option key={level.value} value={level.value} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={level.value} value={level.value} style={{ background: '#ffffff', color: '#2d3748' }}>
                         {level.label}
                       </option>
                     ))}
@@ -821,15 +959,15 @@ const PreInvestmentPage = () => {
                 background: isLoading ? 'rgba(34, 197, 94, 0.6)' : 'linear-gradient(45deg, #22c55e, #10b981)',
                 color: 'white',
                 border: 'none',
-                padding: '16px 32px',
+                padding: isMobile ? '14px 24px' : '16px 32px',
                 borderRadius: '10px',
                 fontFamily: "'Space Mono', monospace",
-                fontSize: '1.1rem',
+                fontSize: isMobile ? '1rem' : '1.1rem',
                 fontWeight: '700',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                width: '100%',
-                maxWidth: '400px',
-                margin: '20px auto',
+                width: isMobile ? '100%' : 'auto',
+                maxWidth: isMobile ? 'none' : '400px',
+                margin: isMobile ? '15px auto' : '20px auto',
                 display: 'block',
                 transition: 'all 0.3s ease'
               }}
@@ -859,38 +997,39 @@ const PreInvestmentPage = () => {
                   Analyzing your business idea...
                 </span>
               ) : (
-                'Get Success Prediction & Recommendations'
+                'Get Prediction'
               )}
             </button>
           </form>
         </div>
 
         {/* Results Section */}
-        {showResults && predictionResult && (
+        {showResults && predictionResult && predictionResult.success_probability !== undefined && (
           <div
             id="prediction-results"
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(10px)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(20px)',
               borderRadius: '20px',
               padding: '40px',
               marginTop: '30px',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+              maxWidth: '900px',
+              margin: '30px auto 0 auto'
             }}
           >
             {/* Report Header */}
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
               <h1 style={{
-                fontSize: '2.5rem',
-                marginBottom: '10px',
-                background: 'linear-gradient(45deg, #22c55e, #10b981)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
+                fontSize: '2rem',
+                marginBottom: '20px',
+                color: '#1a1a1a',
+                fontWeight: '800'
               }}>
                 SME Success Prediction Report
               </h1>
-              <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
+              <p style={{ fontSize: '1.1rem', opacity: 0.7, color: '#4a5568' }}>
                 Comprehensive AI-powered business analysis with strategic recommendations
               </p>
             </div>
@@ -934,128 +1073,10 @@ const PreInvestmentPage = () => {
                   fontWeight: '700',
                   color: '#3b82f6'
                 }}>
-                  {(predictionResult.success_probability * 100).toFixed(1)}%
-                </div>
-              </div>
-
-              <div style={{
-                background: predictionResult.risk_level === 'Low Risk' 
-                  ? 'rgba(34, 197, 94, 0.2)' 
-                  : predictionResult.risk_level === 'Medium Risk'
-                  ? 'rgba(251, 191, 36, 0.2)'
-                  : 'rgba(239, 68, 68, 0.2)',
-                border: `2px solid ${
-                  predictionResult.risk_level === 'Low Risk' 
-                    ? '#22c55e' 
-                    : predictionResult.risk_level === 'Medium Risk'
-                    ? '#fbbf24'
-                    : '#ef4444'
-                }`,
-                borderRadius: '15px',
-                padding: '25px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Risk Assessment</div>
-                <div style={{
-                  fontSize: '1.8rem',
-                  fontWeight: '700',
-                  color: predictionResult.risk_level === 'Low Risk' 
-                    ? '#22c55e' 
-                    : predictionResult.risk_level === 'Medium Risk'
-                    ? '#fbbf24'
-                    : '#ef4444'
-                }}>
-                  {predictionResult.risk_level || 'Medium Risk'}
-                </div>
-              </div>
-
-              <div style={{
-                background: 'rgba(147, 51, 234, 0.2)',
-                border: '2px solid #9333ea',
-                borderRadius: '15px',
-                padding: '25px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Model Version</div>
-                <div style={{
-                  fontSize: '1.8rem',
-                  fontWeight: '700',
-                  color: '#9333ea'
-                }}>
-                  SME Predictor 1.0
+                  {((predictionResult.success_probability || 0) * 100).toFixed(1)}%
                 </div>
               </div>
             </div>
-
-            {/* Factor Analysis Section */}
-            {predictionResult.feature_importance && (
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '15px',
-                padding: '30px',
-                marginBottom: '30px'
-              }}>
-                <h3 style={{
-                  color: '#22c55e',
-                  marginBottom: '25px',
-                  fontSize: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  Factor Analysis
-                </h3>
-                
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '20px'
-                }}>
-                  {Object.entries(predictionResult.feature_importance)
-                    .sort(([,a], [,b]) => Math.abs(b) - Math.abs(a))
-                    .slice(0, 8)
-                    .map(([feature, importance]) => (
-                    <div key={feature} style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '10px',
-                      padding: '15px'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '8px'
-                      }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                          {feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                        <span style={{
-                          fontSize: '0.8rem',
-                          color: importance > 0 ? '#22c55e' : '#ef4444'
-                        }}>
-                          {importance > 0 ? '+' : ''}{(importance * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      <div style={{
-                        height: '6px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '3px',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${Math.abs(importance) * 100}%`,
-                          background: importance > 0 
-                            ? 'linear-gradient(45deg, #22c55e, #10b981)'
-                            : 'linear-gradient(45deg, #ef4444, #dc2626)',
-                          borderRadius: '3px'
-                        }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Detailed Factor Analysis */}
             <div style={{
@@ -1065,7 +1086,7 @@ const PreInvestmentPage = () => {
               marginBottom: '30px'
             }}>
               <div style={{
-                background: 'rgba(34, 197, 94, 0.1)',
+                background: '#ffffff',
                 border: '1px solid #22c55e',
                 borderRadius: '15px',
                 padding: '25px'
@@ -1073,24 +1094,24 @@ const PreInvestmentPage = () => {
                 <h4 style={{ color: '#22c55e', marginBottom: '15px', fontSize: '1.2rem' }}>
                   Financial Factors
                 </h4>
-                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#000000' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Business Capital</span>
+                    <span style={{ color: '#000000' }}>Business Capital</span>
                     <span style={{ color: '#22c55e', fontWeight: '600' }}>Strong</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Capital Source</span>
+                    <span style={{ color: '#000000' }}>Capital Source</span>
                     <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Entity Structure</span>
+                    <span style={{ color: '#000000' }}>Entity Structure</span>
                     <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
                   </div>
                 </div>
               </div>
 
               <div style={{
-                background: 'rgba(59, 130, 246, 0.1)',
+                background: '#ffffff',
                 border: '1px solid #3b82f6',
                 borderRadius: '15px',
                 padding: '25px'
@@ -1098,43 +1119,379 @@ const PreInvestmentPage = () => {
                 <h4 style={{ color: '#3b82f6', marginBottom: '15px', fontSize: '1.2rem' }}>
                   Human Capital
                 </h4>
-                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#000000' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Owner Experience</span>
+                    <span style={{ color: '#000000' }}>Owner Experience</span>
                     <span style={{ color: '#22c55e', fontWeight: '600' }}>High</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Education Level</span>
+                    <span style={{ color: '#000000' }}>Education Level</span>
                     <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Age Factor</span>
+                    <span style={{ color: '#000000' }}>Age Factor</span>
                     <span style={{ color: '#fbbf24', fontWeight: '600' }}>Medium</span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div style={{
-                background: 'rgba(168, 85, 247, 0.1)',
-                border: '1px solid #a855f7',
-                borderRadius: '15px',
-                padding: '25px'
+            {/* Business Analytics Dashboard */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '15px',
+              padding: '30px',
+              marginBottom: '30px',
+              border: '1px solid rgba(34, 197, 94, 0.3)'
+            }}>
+              <h3 style={{
+                color: '#22c55e',
+                marginBottom: '25px',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                <h4 style={{ color: '#a855f7', marginBottom: '15px', fontSize: '1.2rem' }}>
-                  Market Factors
-                </h4>
-                <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Business Sector</span>
-                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
+                Business Analytics Dashboard
+              </h3>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
+                gap: '25px'
+              }}>
+                {/* Success Probability Chart */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  overflow: 'hidden'
+                }}>
+                  <h4 style={{
+                    color: '#1f2937',
+                    fontSize: '1.1rem',
+                    marginBottom: '15px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    Success Probability Trend
+                  </h4>
+                  
+                  <div style={{ 
+                    position: 'relative', 
+                    height: isMobile ? '180px' : isTablet ? '200px' : '220px', 
+                    display: 'flex', 
+                    alignItems: 'end', 
+                    gap: isMobile ? '4px' : isTablet ? '6px' : '8px', 
+                    paddingBottom: '20px',
+                    paddingTop: '30px',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Dynamic bar chart based on actual form data and predictions */}
+                    {(() => {
+                      // Calculate real metrics based on form data
+                      const capitalScore = formData.business_capital ? 
+                        Math.min(100, Math.max(30, (parseInt(parseNumber(formData.business_capital)) / 5000000) * 100)) : 45;
+                      
+                      const experienceScore = formData.owner_business_experience ? 
+                        Math.min(100, Math.max(20, (parseInt(formData.owner_business_experience) / 15) * 100)) : 50;
+                      
+                      const educationScore = formData.education_level_numeric ? 
+                        Math.min(100, Math.max(30, parseInt(formData.education_level_numeric) * 20)) : 55;
+                      
+                      const finalScore = (predictionResult.success_probability || 0) * 100;
+                      
+                      const maxHeight = isMobile ? 140 : isTablet ? 150 : 160;
+                      
+                      return [
+                        { label: 'Capital Base', value: capitalScore },
+                        { label: 'Experience', value: experienceScore },
+                        { label: 'Education', value: educationScore },
+                        { label: 'Final Prediction', value: finalScore }
+                      ].map((item, index) => (
+                        <div key={index} style={{ 
+                          flex: 1, 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center',
+                          minWidth: 0,
+                          maxWidth: isMobile ? '80px' : isTablet ? '100px' : '120px'
+                        }}>
+                          <div style={{
+                            height: `${(item.value / 100) * maxHeight}px`,
+                            background: `linear-gradient(180deg, ${
+                              item.value >= 80 ? '#22c55e' : 
+                              item.value >= 60 ? '#f59e0b' : 
+                              item.value >= 40 ? '#f97316' : '#ef4444'
+                            }, ${
+                              item.value >= 80 ? '#16a34a' : 
+                              item.value >= 60 ? '#d97706' : 
+                              item.value >= 40 ? '#ea580c' : '#dc2626'
+                            })`,
+                            borderRadius: '4px 4px 0 0',
+                            width: '100%',
+                            maxWidth: isMobile ? '40px' : isTablet ? '50px' : '60px',
+                            position: 'relative',
+                            transition: 'all 0.8s ease',
+                            boxShadow: index === 3 ? '0 4px 12px rgba(34, 197, 94, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            margin: '0 auto'
+                          }}>
+                            <div style={{
+                              position: 'absolute',
+                              top: '-22px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              background: item.value >= 80 ? '#22c55e' : 
+                                         item.value >= 60 ? '#f59e0b' : 
+                                         item.value >= 40 ? '#f97316' : '#ef4444',
+                              color: 'white',
+                              padding: isMobile ? '2px 6px' : isTablet ? '2px 7px' : '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: isMobile ? '0.65rem' : isTablet ? '0.7rem' : '0.75rem',
+                              fontWeight: '700',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {item.value.toFixed(0)}%
+                            </div>
+                          </div>
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: isMobile ? '0.6rem' : isTablet ? '0.65rem' : '0.7rem',
+                            color: '#6b7280',
+                            textAlign: 'center',
+                            lineHeight: '1.2',
+                            fontWeight: index === 3 ? '600' : '400',
+                            wordBreak: 'break-word',
+                            width: '100%',
+                            padding: isMobile ? '0 2px' : '0'
+                          }}>
+                            {item.label}
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Location</span>
-                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Team Size</span>
-                    <span style={{ color: '#ef4444', fontWeight: '600' }}>Low</span>
+                </div>
+
+                {/* Success Factors Donut Chart */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h4 style={{
+                    color: '#1f2937',
+                    fontSize: '1.1rem',
+                    marginBottom: '15px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    Success Factors Distribution
+                  </h4>
+                  
+                  <div style={{ 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '15px'
+                  }}>
+                    {/* Donut Chart */}
+                    <div style={{ position: 'relative' }}>
+                      <svg 
+                        width={isMobile ? "150" : isTablet ? "165" : "180"} 
+                        height={isMobile ? "150" : isTablet ? "165" : "180"} 
+                        style={{ transform: 'rotate(-90deg)', cursor: 'pointer' }}
+                      >
+                        {(() => {
+                          // Calculate values based on form data
+                          const capitalScore = formData.business_capital ? 
+                            Math.min(30, Math.max(10, (parseInt(parseNumber(formData.business_capital)) / 5000000) * 30)) : 15;
+                          
+                          const experienceScore = formData.owner_business_experience ? 
+                            Math.min(25, Math.max(8, (parseInt(formData.owner_business_experience) / 15) * 25)) : 12;
+                          
+                          const educationScore = formData.education_level_numeric ? 
+                            Math.min(20, Math.max(5, parseInt(formData.education_level_numeric) * 4)) : 10;
+                          
+                          const marketScore = formData.business_sector && formData.business_location ? 18 : 12;
+                          
+                          const structureScore = formData.entity_type && formData.capital_source ? 15 : 8;
+                          
+                          const total = capitalScore + experienceScore + educationScore + marketScore + structureScore;
+                          
+                          const sectors = [
+                            { name: 'Capital', value: capitalScore, color: '#22c55e' },
+                            { name: 'Experience', value: experienceScore, color: '#3b82f6' },
+                            { name: 'Education', value: educationScore, color: '#f59e0b' },
+                            { name: 'Market', value: marketScore, color: '#8b5cf6' },
+                            { name: 'Structure', value: structureScore, color: '#ef4444' }
+                          ];
+                          
+                          let currentAngle = 0;
+                          const chartSize = isMobile ? 150 : isTablet ? 165 : 180;
+                          const radius = chartSize * 0.39;
+                          const innerRadius = chartSize * 0.25;
+                          const centerX = chartSize / 2;
+                          const centerY = chartSize / 2;
+                          
+                          return (
+                            <>
+                              {sectors.map((sector, index) => {
+                                const angle = (sector.value / total) * 360;
+                                const startAngle = currentAngle;
+                                const endAngle = currentAngle + angle;
+                                
+                                const startAngleRad = (startAngle * Math.PI) / 180;
+                                const endAngleRad = (endAngle * Math.PI) / 180;
+                                
+                                const largeArcFlag = angle > 180 ? 1 : 0;
+                                
+                                const outerStartX = centerX + radius * Math.cos(startAngleRad);
+                                const outerStartY = centerY + radius * Math.sin(startAngleRad);
+                                const outerEndX = centerX + radius * Math.cos(endAngleRad);
+                                const outerEndY = centerY + radius * Math.sin(endAngleRad);
+                                
+                                const innerStartX = centerX + innerRadius * Math.cos(startAngleRad);
+                                const innerStartY = centerY + innerRadius * Math.sin(startAngleRad);
+                                const innerEndX = centerX + innerRadius * Math.cos(endAngleRad);
+                                const innerEndY = centerY + innerRadius * Math.sin(endAngleRad);
+                                
+                                const pathData = [
+                                  `M ${outerStartX} ${outerStartY}`,
+                                  `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${outerEndX} ${outerEndY}`,
+                                  `L ${innerEndX} ${innerEndY}`,
+                                  `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStartX} ${innerStartY}`,
+                                  'Z'
+                                ].join(' ');
+                                
+                                currentAngle += angle;
+                                
+                                return (
+                                  <path
+                                    key={index}
+                                    d={pathData}
+                                    fill={sector.color}
+                                    stroke="#ffffff"
+                                    strokeWidth="2"
+                                    style={{
+                                      filter: `drop-shadow(0 2px 4px ${sector.color}40)`,
+                                      transition: 'all 0.3s ease',
+                                      cursor: 'pointer'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.filter = `drop-shadow(0 4px 8px ${sector.color}60)`;
+                                      e.target.style.transform = 'scale(1.05)';
+                                      e.target.style.transformOrigin = '90px 90px';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.filter = `drop-shadow(0 2px 4px ${sector.color}40)`;
+                                      e.target.style.transform = 'scale(1)';
+                                    }}
+                                  />
+                                );
+                              })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                      
+                      {/* Center Text */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{
+                          fontSize: isMobile ? '1.4rem' : isTablet ? '1.6rem' : '1.8rem',
+                          fontWeight: '700',
+                          color: (predictionResult.success_probability || 0) >= 0.7 ? '#22c55e' : 
+                                 (predictionResult.success_probability || 0) >= 0.5 ? '#f59e0b' : '#ef4444'
+                        }}>
+                          {((predictionResult.success_probability || 0) * 100).toFixed(0)}%
+                        </div>
+                        <div style={{
+                          fontSize: isMobile ? '0.6rem' : '0.7rem',
+                          color: '#6b7280',
+                          fontWeight: '500'
+                        }}>
+                          Success Rate
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Legend */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 
+                                         isTablet ? 'repeat(3, 1fr)' : 
+                                         'repeat(auto-fit, minmax(120px, 1fr))',
+                      gap: isMobile ? '6px' : '8px',
+                      width: '100%'
+                    }}>
+                      {(() => {
+                        const capitalScore = formData.business_capital ? 
+                          Math.min(30, Math.max(10, (parseInt(parseNumber(formData.business_capital)) / 5000000) * 30)) : 15;
+                        
+                        const experienceScore = formData.owner_business_experience ? 
+                          Math.min(25, Math.max(8, (parseInt(formData.owner_business_experience) / 15) * 25)) : 12;
+                        
+                        const educationScore = formData.education_level_numeric ? 
+                          Math.min(20, Math.max(5, parseInt(formData.education_level_numeric) * 4)) : 10;
+                        
+                        const marketScore = formData.business_sector && formData.business_location ? 18 : 12;
+                        
+                        const structureScore = formData.entity_type && formData.capital_source ? 15 : 8;
+                        
+                        const total = capitalScore + experienceScore + educationScore + marketScore + structureScore;
+                        
+                        const sectors = [
+                          { name: 'Capital', value: capitalScore, color: '#22c55e' },
+                          { name: 'Experience', value: experienceScore, color: '#3b82f6' },
+                          { name: 'Education', value: educationScore, color: '#f59e0b' },
+                          { name: 'Market', value: marketScore, color: '#8b5cf6' },
+                          { name: 'Structure', value: structureScore, color: '#ef4444' }
+                        ];
+                        
+                        return sectors.map((sector, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              backgroundColor: sector.color,
+                              borderRadius: '50%',
+                              flexShrink: 0
+                            }}></div>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              color: '#374151',
+                              fontWeight: '500'
+                            }}>
+                              {sector.name}
+                            </span>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              color: sector.color,
+                              fontWeight: '600'
+                            }}>
+                              {((sector.value / total) * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1142,10 +1499,11 @@ const PreInvestmentPage = () => {
 
             {/* Overall Assessment */}
             <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
+              background: '#ffffff',
               borderRadius: '15px',
               padding: '25px',
-              marginBottom: '30px'
+              marginBottom: '30px',
+              border: '1px solid rgba(34, 197, 94, 0.3)'
             }}>
               <h3 style={{
                 color: '#22c55e',
@@ -1154,10 +1512,12 @@ const PreInvestmentPage = () => {
               }}>
                 Overall Assessment
               </h3>
-              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '15px' }}>
-                {predictionResult.prediction === 'Success' 
+              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '15px', color: '#000000' }}>
+                {(predictionResult.success_probability || 0) >= 0.6 
                   ? 'Excellent business potential with high success probability.'
-                  : 'Business shows potential but requires strategic improvements.'}
+                  : (predictionResult.success_probability || 0) >= 0.4
+                  ? 'Business shows moderate potential with some strategic improvements needed.'
+                  : 'Business faces significant challenges but can be improved with proper planning and strategic changes.'}
               </p>
               
               <div style={{
@@ -1167,144 +1527,181 @@ const PreInvestmentPage = () => {
                 marginTop: '20px'
               }}>
                 <div style={{
-                  background: 'rgba(34, 197, 94, 0.2)',
+                  background: '#ffffff',
                   padding: '15px',
                   borderRadius: '10px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  border: '1px solid #22c55e'
                 }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Strengths</div>
+                  <div style={{ fontSize: '0.9rem', color: '#000000' }}>Strengths</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#22c55e' }}>
                     {getAssessmentText(predictionResult.strengths?.length || 2, 'strengths')}
                   </div>
                 </div>
                 
                 <div style={{
-                  background: 'rgba(251, 191, 36, 0.2)',
+                  background: '#ffffff',
                   padding: '15px',
                   borderRadius: '10px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  border: '1px solid #fbbf24'
                 }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Opportunities</div>
+                  <div style={{ fontSize: '0.9rem', color: '#000000' }}>Opportunities</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fbbf24' }}>
                     {getAssessmentText(predictionResult.opportunities?.length || 3, 'opportunities')}
                   </div>
                 </div>
-                
+
                 <div style={{
-                  background: 'rgba(239, 68, 68, 0.2)',
+                  background: '#ffffff',
                   padding: '15px',
                   borderRadius: '10px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  border: '1px solid #3b82f6'
                 }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Risk Areas</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ef4444' }}>
-                    {getAssessmentText(predictionResult.risks?.length || 2, 'risks')}
+                  <div style={{ fontSize: '0.9rem', color: '#000000' }}>Success Rate</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 
+                    (predictionResult.success_probability || 0) >= 0.7 ? '#22c55e' : 
+                    (predictionResult.success_probability || 0) >= 0.5 ? '#f59e0b' : '#ef4444' }}>
+                    {((predictionResult.success_probability || 0) * 100).toFixed(1)}%
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Strategic Recommendations */}
+            {/* SHAP-Based AI Recommendations */}
             {predictionResult.recommendations && predictionResult.recommendations.length > 0 && (
               <div style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '15px',
-                padding: '25px',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)',
+                borderRadius: '20px',
+                padding: '30px',
                 marginBottom: '30px',
+                border: '3px solid #3b82f6',
+                boxShadow: '0 15px 40px rgba(59, 130, 246, 0.25)',
                 overflow: 'hidden',
                 width: '100%',
                 boxSizing: 'border-box'
               }}>
-                <h3 style={{
-                  color: '#22c55e',
-                  marginBottom: '20px',
-                  fontSize: '1.5rem',
+                <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px'
+                  gap: '12px',
+                  marginBottom: '25px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid rgba(59, 130, 246, 0.2)'
                 }}>
-                  Strategic Recommendations
-                </h3>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
-                  gap: '15px',
-                  width: '100%'
-                }}>
-                  {predictionResult.recommendations.map((rec, index) => (
-                    <div key={index} style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      borderRadius: '10px',
-                      padding: '40px 15px 15px 15px',
-                      position: 'relative',
-                      width: '100%',
-                      boxSizing: 'border-box'
+                  <div style={{
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    color: 'white',
+                    borderRadius: '12px',
+                    width: '48px',
+                    height: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)'
+                  }}>
+                    AI
+                  </div>
+                  <div>
+                    <h3 style={{
+                      color: '#1f2937',
+                      fontSize: '1.7rem',
+                      fontWeight: '700',
+                      margin: '0',
+                      background: 'linear-gradient(135deg, #1f2937, #3b82f6)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
                     }}>
-                      <div style={{
-                        position: 'absolute',
-                        top: '8px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        background: '#22c55e',
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: '28px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.85rem',
-                        fontWeight: '700'
-                      }}>
-                        {index + 1}
-                      </div>
-                      <div style={{
-                        fontSize: '0.9rem',
-                        lineHeight: '1.5',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        hyphens: 'auto'
-                      }}>
-                        {rec}
-                      </div>
+                      SHAP AI-Powered Insights
+                    </h3>
+                    <p style={{
+                      color: '#6b7280',
+                      fontSize: '0.95rem',
+                      margin: '5px 0 0 0',
+                      fontWeight: '500'
+                    }}>
+                      Machine learning explanations based on feature importance analysis
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Simple recommendations display */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '10px',
+                  padding: '20px',
+                  fontSize: '1rem',
+                  lineHeight: '1.6',
+                  color: '#1f2937'
+                }}>
+                  {predictionResult.recommendations.map((recommendation, index) => (
+                    <div key={index} style={{ marginBottom: index < predictionResult.recommendations.length - 1 ? '15px' : '0' }}>
+                      {recommendation}
                     </div>
                   ))}
                 </div>
+                
+                {/* SHAP Explanation Footer */}
+                <div style={{
+                  marginTop: '25px',
+                  padding: '20px',
+                  background: 'rgba(59, 130, 246, 0.05)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '12px',
+                  textAlign: 'center'
+                }}>
+                  <p style={{
+                    fontSize: '0.9rem',
+                    color: '#4b5563',
+                    margin: '0',
+                    fontStyle: 'italic',
+                    lineHeight: '1.5'
+                  }}>
+                    <strong>SHAP (SHapley Additive exPlanations)</strong> analyzes how each business factor contributes to your success prediction. 
+                    These insights are generated by examining feature importance in the machine learning model, providing 
+                    data-driven recommendations specific to your business profile.
+                  </p>
+                </div>
               </div>
             )}
-
-            {/* Disclaimer Message */}
             <div style={{
-              background: 'rgba(255, 193, 7, 0.1)',
-              border: '1px solid rgba(255, 193, 7, 0.3)',
-              borderRadius: '10px',
-              padding: '20px',
+              background: 'rgba(255, 193, 7, 0.15)',
+              border: '2px solid #ffc107',
+              borderRadius: '12px',
+              padding: '25px',
               marginTop: '30px',
-              textAlign: 'center'
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(255, 193, 7, 0.2)'
             }}>
               <h4 style={{ 
-                color: '#ffc107', 
+                color: '#f59e0b', 
                 marginBottom: '15px',
-                fontSize: '1.1rem',
-                fontWeight: '700'
+                fontSize: '1.2rem',
+                fontWeight: '700',
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
               }}>
                 Important Disclaimer
               </h4>
               <p style={{ 
-                fontSize: '0.9rem', 
+                fontSize: '1rem', 
                 lineHeight: '1.6',
-                margin: '0 0 10px 0',
-                opacity: 0.9
+                margin: '0 0 15px 0',
+                color: '#1f2937',
+                fontWeight: '500'
               }}>
                 This AI prediction is for informational purposes only and should not be considered as professional business advice. 
                 Results are based on statistical patterns and may not account for all factors affecting business success.
               </p>
               <p style={{ 
-                fontSize: '0.9rem', 
+                fontSize: '1rem', 
                 lineHeight: '1.6',
                 margin: '0',
-                opacity: 0.9
+                color: '#1f2937',
+                fontWeight: '600'
               }}>
                 <strong>Please consult with professional business consultants, financial advisors, or industry experts before making important business decisions.</strong>
               </p>
@@ -1321,37 +1718,31 @@ const PreInvestmentPage = () => {
               <button
                 onClick={resetForm}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  padding: '14px 28px',
+                  borderRadius: '10px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
                   color: 'white',
                   fontFamily: "'Space Mono', monospace",
+                  fontSize: '1rem',
+                  fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.4)',
+                  transform: 'translateY(-2px)'
                 }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'linear-gradient(45deg, #5a6fd8, #6a4c93)';
+                  e.target.style.transform = 'translateY(-4px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.4)';
+                }}
               >
                 Analyze Another Idea
-              </button>
-              
-              <button
-                onClick={() => window.print()}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  color: 'white',
-                  fontFamily: "'Space Mono', monospace",
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
-              >
-                Print Results
               </button>
               
               <button

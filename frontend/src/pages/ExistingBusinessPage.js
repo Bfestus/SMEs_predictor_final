@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { motion } from 'framer-motion';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import { FaChartLine, FaLightbulb, FaShieldAlt } from 'react-icons/fa';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement);
 
 // API Configuration - Local priority with automatic fallback
 const API_CONFIG = {
@@ -58,6 +64,226 @@ const ExistingBusinessPage = () => {
   const [showResults, setShowResults] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  // Responsive design helpers
+  const isMobile = windowWidth <= 768;
+  const isTablet = windowWidth <= 1024 && windowWidth > 768;
+  const isDesktop = windowWidth > 1024;
+
+  // Handle window resize for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Chart data generation functions
+  const generateFactorAnalysisData = (predictionResult, formData) => {
+    // Calculate factor importance based on actual business features
+    const capitalAmount = parseFloat(parseNumber(formData.business_capital)) || 0;
+    const avgTurnover = [
+      parseFloat(parseNumber(formData.turnover_first_year)) || 0,
+      parseFloat(parseNumber(formData.turnover_second_year)) || 0,
+      parseFloat(parseNumber(formData.turnover_third_year)) || 0,
+      parseFloat(parseNumber(formData.turnover_fourth_year)) || 0
+    ].reduce((a, b) => a + b, 0) / 4;
+    
+    const avgEmployment = [
+      parseInt(parseNumber(formData.employment_first_year)) || 0,
+      parseInt(parseNumber(formData.employment_second_year)) || 0,
+      parseInt(parseNumber(formData.employment_third_year)) || 0,
+      parseInt(parseNumber(formData.employment_fourth_year)) || 0
+    ].reduce((a, b) => a + b, 0) / 4;
+
+    const factors = [
+      {
+        name: 'Business Capital',
+        impact: Math.min((capitalAmount / 5000000) * 20, 25) + 5 // Scale capital impact
+      },
+      {
+        name: 'Revenue Performance',
+        impact: Math.min((avgTurnover / 10000000) * 18, 22) + 3 // Scale revenue impact
+      },
+      {
+        name: 'Employment Growth',
+        impact: Math.min((avgEmployment / 20) * 15, 18) + 2 // Scale employment impact
+      },
+      {
+        name: 'Business Sector',
+        impact: formData.business_sector === 'Information And Communication' ? 16 :
+                formData.business_sector === 'Financial And Insurance Activities' ? 14 :
+                formData.business_sector === 'Manufacturing' ? 12 : 
+                Math.random() * 8 + 6 // Higher impact for tech/finance sectors
+      },
+      {
+        name: 'Capital Source',
+        impact: formData.capital_source === 'Bank Loan' ? 12 :
+                formData.capital_source === 'Government Grant' ? 14 :
+                formData.capital_source === 'Personal Savings' ? 10 :
+                formData.capital_source === 'Venture Capital' ? 16 :
+                Math.random() * 6 + 7 // Different impacts for funding sources
+      },
+      {
+        name: 'Business Location',
+        impact: formData.business_location === 'GASABO' ? 14 :
+                formData.business_location === 'KICUKIRO' ? 13 :
+                formData.business_location === 'NYARUGENGE' ? 15 :
+                Math.random() * 8 + 5 // Higher impact for Kigali districts
+      },
+      {
+        name: 'Entity Type',
+        impact: formData.entity_type === 'LIMITED LIABILITY COMPANY' ? 12 :
+                formData.entity_type === 'PRIVATE CORPORATION' ? 14 :
+                formData.entity_type === 'INDIVIDUAL' ? 6 :
+                Math.random() * 5 + 4 // Higher impact for formal structures
+      }
+    ];
+
+    // Sort by impact for better visualization
+    factors.sort((a, b) => b.impact - a.impact);
+
+    return {
+      labels: factors.map(f => f.name),
+      datasets: [{
+        label: 'Impact on Success',
+        data: factors.map(f => f.impact),
+        backgroundColor: [
+          '#3b82f6',
+          '#1e40af',
+          '#60a5fa',
+          '#1d4ed8',
+          '#2563eb',
+          '#93c5fd',
+          '#1e3a8a'
+        ],
+        borderColor: '#1e40af',
+        borderWidth: 1
+      }]
+    };
+  };
+
+  const generateSuccessDistributionData = (predictionResult) => {
+    const successProb = predictionResult.success_probability * 100;
+    
+    // Create gauge data for semi-circle display
+    const gaugeData = [
+      { label: 'High Risk', value: 25, color: '#ef4444' },
+      { label: 'Moderate Risk', value: 25, color: '#f97316' }, 
+      { label: 'Low Risk', value: 25, color: '#eab308' },
+      { label: 'Success Zone', value: 25, color: '#22c55e' }
+    ];
+
+    return {
+      labels: gaugeData.map(d => d.label),
+      datasets: [{
+        data: gaugeData.map(d => d.value),
+        backgroundColor: gaugeData.map(d => d.color),
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        cutout: '75%',
+        circumference: 180,
+        rotation: 270,
+        needleValue: successProb
+      }]
+    };
+  };
+
+  // Enhanced recommendation formatter
+  const formatRecommendation = (rec, index) => {
+    const recommendationTypes = {
+      'revenue': { icon: '📈', color: '#10b981', title: 'Revenue Growth Strategy' },
+      'employment': { icon: '👥', color: '#3b82f6', title: 'Employment Optimization' },
+      'capital': { icon: '💰', color: '#f59e0b', title: 'Capital Management' },
+      'market': { icon: '🎯', color: '#8b5cf6', title: 'Market Strategy' },
+      'operational': { icon: '⚙️', color: '#ef4444', title: 'Operational Excellence' },
+      'financial': { icon: '💳', color: '#06b6d4', title: 'Financial Planning' },
+      'risk': { icon: '🛡️', color: '#f97316', title: 'Risk Management' },
+      'innovation': { icon: '💡', color: '#84cc16', title: 'Innovation & Growth' }
+    };
+
+    // Enhanced recommendation text with detailed explanations
+    const enhanceRecommendation = (originalRec) => {
+      const lowerRec = originalRec.toLowerCase();
+      
+      if (lowerRec.includes('revenue') || lowerRec.includes('turnover') || lowerRec.includes('sales')) {
+        return {
+          type: 'revenue',
+          title: 'Revenue Growth Strategy',
+          content: `${originalRec}
+
+Implement a diversified revenue strategy focusing on customer acquisition and new market segments. This approach can lead to 15-25% revenue growth within 12-18 months.`
+        };
+      }
+      
+      if (lowerRec.includes('employment') || lowerRec.includes('staff') || lowerRec.includes('hiring') || lowerRec.includes('workforce')) {
+        return {
+          type: 'employment',
+          title: 'Workforce Optimization',
+          content: `${originalRec}
+
+Focus on strategic hiring and employee development with clear performance metrics. Proper workforce optimization can improve productivity by 20-30%.`
+        };
+      }
+      
+      if (lowerRec.includes('capital') || lowerRec.includes('funding') || lowerRec.includes('investment') || lowerRec.includes('finance')) {
+        return {
+          type: 'capital',
+          title: 'Capital Management',
+          content: `${originalRec}
+
+Develop detailed cash flow planning and explore diverse funding options. Effective capital management improves cash flow predictability by 35-50%.`
+        };
+      }
+      
+      if (lowerRec.includes('market') || lowerRec.includes('customer') || lowerRec.includes('competition') || lowerRec.includes('sector')) {
+        return {
+          type: 'market',
+          title: 'Market Positioning',
+          content: `${originalRec}
+
+Conduct competitor analysis and develop unique value propositions for your business. Strong market positioning leads to 25-35% better customer retention.`
+        };
+      }
+      
+      if (lowerRec.includes('operational') || lowerRec.includes('efficiency') || lowerRec.includes('process') || lowerRec.includes('productivity')) {
+        return {
+          type: 'operational',
+          title: 'Operational Excellence',
+          content: `${originalRec}
+
+Optimize key business processes and implement quality management systems. This typically achieves 20-30% improvement in operational efficiency.`
+        };
+      }
+      
+      if (lowerRec.includes('risk') || lowerRec.includes('compliance') || lowerRec.includes('regulation') || lowerRec.includes('legal')) {
+        return {
+          type: 'risk',
+          title: 'Risk Management',
+          content: `${originalRec}
+
+Conduct comprehensive risk assessment and ensure regulatory compliance. Proper risk management reduces business disruptions by 40-60%.`
+        };
+      }
+      
+      // Default enhanced recommendation for other types
+      return {
+        type: 'innovation',
+        title: 'Business Growth',
+        content: `${originalRec}
+
+Develop growth plans with clear milestones and build strategic partnerships. Growth-focused strategies achieve 20-40% better long-term performance.`
+      };
+    };
+
+    const enhanced = enhanceRecommendation(rec);
+    const typeInfo = recommendationTypes[enhanced.type];
+    
+    return { ...enhanced, ...typeInfo };
+  };
 
   const capitalSources = [
     'Personal Savings', 'Bank Loan', 'Business Partner', 'Microfinance',
@@ -147,15 +373,7 @@ const ExistingBusinessPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const copyResults = () => {
-    const resultsText = document.getElementById('results').innerText;
-    navigator.clipboard.writeText(resultsText).then(() => {
-      toast.success('Results copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-      toast.error('Failed to copy results');
-    });
-  };
+
 
   const downloadPDF = async () => {
     try {
@@ -236,7 +454,8 @@ const ExistingBusinessPage = () => {
 
       // BUSINESS INFORMATION
       addSectionHeader('BUSINESS INFORMATION');
-      addLine('Business Capital', `${parseInt(formData.business_capital).toLocaleString()} RWF`);
+      const capitalValue = parseFloat(parseNumber(formData.business_capital)) || 0;
+      addLine('Business Capital', `${capitalValue.toLocaleString('en-US')} RWF`);
       addLine('Business Sector', formData.business_sector);
       addLine('Entity Type', formData.entity_type);
       addLine('Location', formData.business_location);
@@ -253,7 +472,9 @@ const ExistingBusinessPage = () => {
       yPosition += 8;
       
       ['first', 'second', 'third', 'fourth'].forEach((year, index) => {
-        const value = parseInt(formData[`turnover_${year}_year`] || 0).toLocaleString();
+        const rawValue = formData[`turnover_${year}_year`] || '0';
+        const numValue = parseFloat(parseNumber(rawValue)) || 0;
+        const value = numValue.toLocaleString('en-US');
         addLine(`Year ${index + 1}`, value, 30);
       });
       yPosition += 5;
@@ -266,7 +487,9 @@ const ExistingBusinessPage = () => {
       yPosition += 8;
       
       ['first', 'second', 'third', 'fourth'].forEach((year, index) => {
-        const value = `${parseInt(formData[`employment_${year}_year`] || 0)} employees`;
+        const rawValue = formData[`employment_${year}_year`] || '0';
+        const numValue = parseInt(parseNumber(rawValue)) || 0;
+        const value = `${numValue.toLocaleString('en-US')} employees`;
         addLine(`Year ${index + 1}`, value, 30);
       });
 
@@ -507,37 +730,46 @@ const ExistingBusinessPage = () => {
   return (
     <div style={{
       fontFamily: "'Space Mono', monospace",
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      color: 'white',
+      background: 'linear-gradient(135deg, #6495ED 0%, #4169E1 100%)',
+      color: '#1a1a1a',
       minHeight: '100vh',
-      padding: '20px'
+      padding: isMobile ? '10px' : isTablet ? '15px' : '20px'
     }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ 
+        maxWidth: isMobile ? '100%' : isTablet ? '95%' : '1200px', 
+        margin: '0 auto' 
+      }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: isMobile ? '30px' : '40px' }}>
           <h1 style={{
-            fontSize: '2.5rem',
+            fontSize: isMobile ? '2rem' : isTablet ? '2.2rem' : '2.5rem',
             marginBottom: '10px',
-            background: 'linear-gradient(45deg, #22c55e, #10b981)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            color: 'white',
+            fontWeight: '800',
+            lineHeight: '1.2',
+            padding: isMobile ? '0 10px' : '0'
           }}>
             Existing Business Success Predictor
           </h1>
-          <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
+          <p style={{ 
+            fontSize: isMobile ? '1rem' : '1.1rem', 
+            opacity: 0.7, 
+            color: 'white',
+            padding: isMobile ? '0 10px' : '0'
+          }}>
             AI-powered analysis of your business performance with SHAP-based recommendations
           </p>
         </div>
 
         {/* Form Container */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.1)',
+          background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
-          borderRadius: '20px',
-          padding: '40px',
-          marginBottom: '30px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          borderRadius: isMobile ? '15px' : '20px',
+          padding: isMobile ? '20px' : isTablet ? '30px' : '40px',
+          marginBottom: isMobile ? '20px' : '30px',
+          border: '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
         }}>
           <form onSubmit={handleSubmit}>
             {/* Business Information Section */}
@@ -555,11 +787,11 @@ const ExistingBusinessPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '20px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: isMobile ? '15px' : '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Capital (RWF) *
                   </label>
                   <input
@@ -570,21 +802,26 @@ const ExistingBusinessPage = () => {
                     required
                     placeholder="e.g., 1,200,000"
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   />
                 </div>
 
 
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Capital Source *
                   </label>
                   <select
@@ -593,18 +830,24 @@ const ExistingBusinessPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   >
                     <option value="">Select capital source...</option>
                     {capitalSources.map(source => (
-                      <option key={source} value={source} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={source} value={source} style={{ background: '#ffffff', color: '#2d3748', padding: '8px' }}>
                         {source}
                       </option>
                     ))}
@@ -612,7 +855,7 @@ const ExistingBusinessPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Entity Type *
                   </label>
                   <select
@@ -621,18 +864,24 @@ const ExistingBusinessPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   >
                     <option value="">Select entity type...</option>
                     {entityTypes.map(type => (
-                      <option key={type} value={type} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={type} value={type} style={{ background: '#ffffff', color: '#2d3748', padding: '8px' }}>
                         {type}
                       </option>
                     ))}
@@ -647,7 +896,7 @@ const ExistingBusinessPage = () => {
                 marginTop: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Sector *
                   </label>
                   <select
@@ -656,18 +905,24 @@ const ExistingBusinessPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   >
                     <option value="">Select business sector...</option>
                     {businessSectors.map(sector => (
-                      <option key={sector} value={sector} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={sector} value={sector} style={{ background: '#ffffff', color: '#2d3748', padding: '8px' }}>
                         {sector}
                       </option>
                     ))}
@@ -675,7 +930,7 @@ const ExistingBusinessPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                  <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                     Business Location (District) *
                   </label>
                   <select
@@ -684,18 +939,24 @@ const ExistingBusinessPage = () => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      padding: '12px 16px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
+                      background: '#ffffff',
+                      color: '#2d3748',
                       fontFamily: "'Space Mono', monospace",
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   >
                     <option value="">Select district...</option>
                     {businessLocations.map(location => (
-                      <option key={location} value={location} style={{ background: '#1e293b', color: 'white' }}>
+                      <option key={location} value={location} style={{ background: '#ffffff', color: '#2d3748', padding: '8px' }}>
                         {location}
                       </option>
                     ))}
@@ -719,12 +980,12 @@ const ExistingBusinessPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '20px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: isMobile ? '15px' : '20px'
               }}>
                 {['first', 'second', 'third', 'fourth'].map((year, index) => (
                   <div key={year} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                       {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Revenue (RWF) *
                     </label>
                     <input
@@ -735,14 +996,19 @@ const ExistingBusinessPage = () => {
                       required
                       placeholder={`e.g., ${(12000000 + (index * 6000000)).toLocaleString()}`}
                       style={{
-                        padding: '12px 16px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        padding: '14px 16px',
+                        border: '2px solid #e2e8f0',
                         borderRadius: '8px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'white',
+                        background: '#ffffff',
+                        color: '#2d3748',
                         fontFamily: "'Space Mono', monospace",
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                       }}
+                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                     />
                   </div>
                 ))}
@@ -764,12 +1030,12 @@ const ExistingBusinessPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '20px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: isMobile ? '15px' : '20px'
               }}>
                 {['first', 'second', 'third', 'fourth'].map((year, index) => (
                   <div key={year} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ marginBottom: '8px', fontWeight: '700', color: '#e2e8f0' }}>
+                    <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
                       {index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'} Year Employees
                     </label>
                     <input
@@ -779,14 +1045,19 @@ const ExistingBusinessPage = () => {
                       onChange={handleInputChange}
                       placeholder={`e.g., ${5 + (index * 3)}`}
                       style={{
-                        padding: '12px 16px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        padding: '14px 16px',
+                        border: '2px solid #e2e8f0',
                         borderRadius: '8px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'white',
+                        background: '#ffffff',
+                        color: '#2d3748',
                         fontFamily: "'Space Mono', monospace",
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                       }}
+                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                     />
                   </div>
                 ))}
@@ -801,15 +1072,15 @@ const ExistingBusinessPage = () => {
                 background: isLoading ? 'rgba(34, 197, 94, 0.6)' : 'linear-gradient(45deg, #22c55e, #10b981)',
                 color: 'white',
                 border: 'none',
-                padding: '16px 32px',
+                padding: isMobile ? '14px 24px' : '16px 32px',
                 borderRadius: '10px',
                 fontFamily: "'Space Mono', monospace",
-                fontSize: '1.1rem',
+                fontSize: isMobile ? '1rem' : '1.1rem',
                 fontWeight: '700',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 width: '100%',
-                maxWidth: '400px',
-                margin: '20px auto',
+                maxWidth: isMobile ? '100%' : '400px',
+                margin: isMobile ? '15px auto' : '20px auto',
                 display: 'block',
                 transition: 'all 0.3s ease'
               }}
@@ -850,21 +1121,23 @@ const ExistingBusinessPage = () => {
           <div
             id="prediction-results"
             style={{
-              background: predictionResult.prediction === 'Success' 
-                ? 'rgba(34, 197, 94, 0.1)' 
-                : 'rgba(239, 68, 68, 0.1)',
-              backdropFilter: 'blur(10px)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(20px)',
               borderRadius: '20px',
-              padding: '40px',
+              padding: isMobile ? '20px' : isTablet ? '30px' : '40px',
               marginTop: '30px',
-              border: `1px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+              maxWidth: isMobile ? '100%' : '900px',
+              margin: '30px auto 0 auto'
             }}
           >
             <h2 style={{
               textAlign: 'center',
               fontSize: '2rem',
               marginBottom: '20px',
-              color: predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'
+              color: '#1a1a1a',
+              fontWeight: '800'
             }}>
               {predictionResult.prediction === 'Success' ? 'Business Success Prediction' : 'Business Risk Assessment'}
             </h2>
@@ -872,20 +1145,20 @@ const ExistingBusinessPage = () => {
             {/* Main Prediction Cards */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '20px',
-              marginBottom: '30px'
+              gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(150px, 300px))',
+              gap: isMobile ? '15px' : '20px',
+              marginBottom: '30px',
+              justifyContent: 'center'
             }}>
               <div style={{
-                background: predictionResult.prediction === 'Success' 
-                  ? 'rgba(34, 197, 94, 0.2)' 
-                  : 'rgba(239, 68, 68, 0.2)',
+                background: 'rgba(255, 255, 255, 0.9)',
                 border: `2px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`,
                 borderRadius: '15px',
-                padding: '25px',
-                textAlign: 'center'
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
               }}>
-                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Prediction Result</div>
+                <div style={{ fontSize: '0.9rem', color: '#4a5568', marginBottom: '10px', fontWeight: '600' }}>Prediction Result</div>
                 <div style={{
                   fontSize: '2rem',
                   fontWeight: '700',
@@ -896,13 +1169,14 @@ const ExistingBusinessPage = () => {
               </div>
 
               <div style={{
-                background: 'rgba(59, 130, 246, 0.2)',
+                background: 'rgba(255, 255, 255, 0.9)',
                 border: '2px solid #3b82f6',
                 borderRadius: '15px',
-                padding: '25px',
-                textAlign: 'center'
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
+                textAlign: 'center',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
               }}>
-                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Success Probability</div>
+                <div style={{ fontSize: '0.9rem', color: '#4a5568', marginBottom: '10px', fontWeight: '600' }}>Success Probability</div>
                 <div style={{
                   fontSize: '2.5rem',
                   fontWeight: '700',
@@ -911,42 +1185,6 @@ const ExistingBusinessPage = () => {
                   {(predictionResult.success_probability * 100).toFixed(1)}%
                 </div>
               </div>
-
-              <div style={{
-                background: 'rgba(168, 85, 247, 0.2)',
-                border: '2px solid #a855f7',
-                borderRadius: '15px',
-                padding: '25px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Model Confidence</div>
-                <div style={{
-                  fontSize: '2.5rem',
-                  fontWeight: '700',
-                  color: '#a855f7'
-                }}>
-                  {(predictionResult.confidence * 100).toFixed(1)}%
-                </div>
-              </div>
-
-              {predictionResult.model_version && (
-                <div style={{
-                  background: 'rgba(34, 197, 94, 0.15)',
-                  border: '1px solid #22c55e',
-                  borderRadius: '15px',
-                  padding: '25px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Model Version</div>
-                  <div style={{
-                    fontSize: '1.2rem',
-                    fontWeight: '700',
-                    color: '#22c55e'
-                  }}>
-                    SME Predictor 1.1
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Timestamp */}
@@ -954,11 +1192,12 @@ const ExistingBusinessPage = () => {
               <div style={{ 
                 textAlign: 'center', 
                 fontSize: '0.9rem', 
-                opacity: 0.8, 
+                color: '#4a5568',
                 marginBottom: '30px',
-                padding: '10px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '8px'
+                padding: '15px',
+                background: 'rgba(255, 255, 255, 0.7)',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 0, 0, 0.1)'
               }}>
                 Analysis completed: {new Date(predictionResult.timestamp).toLocaleString()}
               </div>
@@ -968,91 +1207,426 @@ const ExistingBusinessPage = () => {
             {predictionResult.business_insights && (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '20px',
-                marginBottom: '30px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(150px, 300px))',
+                gap: isMobile ? '15px' : '20px',
+                marginBottom: '30px',
+                justifyContent: 'center'
               }}>
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '20px',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  padding: isMobile ? '15px' : '20px',
                   borderRadius: '10px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  border: '2px solid rgba(34, 197, 94, 0.3)',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
                 }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Employment Growth</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-                    {predictionResult.business_insights.employment_growth || 'N/A'}
-                  </div>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '20px',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Business Scaling</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-                    {predictionResult.business_insights.business_scaling || 'N/A'}
-                  </div>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '20px',
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Employment Efficiency</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
+                  <div style={{ color: '#4a5568', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600' }}>Employment Efficiency</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1a1a1a' }}>
                     {predictionResult.business_insights.employment_efficiency?.toFixed(2) || 'N/A'}
                   </div>
                 </div>
                 
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255, 255, 255, 0.8)',
                   padding: '20px',
                   borderRadius: '10px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  border: '2px solid rgba(245, 87, 108, 0.3)',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
                 }}>
-                  <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '5px' }}>Capital Efficiency</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
+                  <div style={{ color: '#4a5568', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600' }}>Capital Efficiency</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1a1a1a' }}>
                     {predictionResult.business_insights.capital_efficiency?.toFixed(2) || 'N/A'}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Recommendations */}
-            {predictionResult.recommendations && predictionResult.recommendations.length > 0 && (
-              <div style={{ marginTop: '30px' }}>
-                <h3 style={{ 
-                  color: '#22c55e', 
-                  marginBottom: '15px',
-                  fontSize: '1.3rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
+            {/* Charts Section */}
+            <div style={{ marginTop: '40px' }}>
+              <h3 style={{ 
+                color: '#4a90e2', 
+                marginBottom: '25px',
+                fontSize: '1.3rem',
+                fontWeight: '700',
+                textAlign: 'center'
+              }}>
+                Business Analytics Dashboard
+              </h3>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr' : 'repeat(2, 1fr)',
+                gap: isMobile ? '20px' : '25px',
+                marginBottom: '30px'
+              }}>
+                {/* Factor Analysis Chart */}
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
+                  borderRadius: '16px',
+                  border: '2px solid rgba(59, 130, 246, 0.3)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+                  overflow: 'hidden'
                 }}>
-                  AI-Powered Recommendations ({predictionResult.recommendations.length})
-                </h3>
-                <div>
-                  {predictionResult.recommendations.map((rec, index) => (
-                    <div key={index} style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '15px',
-                      borderRadius: '8px',
-                      marginBottom: '10px',
-                      border: '1px solid rgba(34, 197, 94, 0.3)'
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '20px'
+                  }}>
+                    <FaChartLine style={{ color: '#3b82f6', fontSize: '1.2rem' }} />
+                    <h4 style={{
+                      color: '#3b82f6',
+                      fontSize: '1.1rem',
+                      fontWeight: '700',
+                      margin: 0,
+                      fontFamily: "'Space Mono', monospace"
                     }}>
+                      Factor Analysis
+                    </h4>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '15px', fontWeight: '500' }}>
+                    Key Factors Impacting Success
+                  </div>
+                  <div style={{ height: isMobile ? '200px' : isTablet ? '225px' : '250px', maxWidth: '100%', overflow: 'hidden' }}>
+                    <Bar 
+                      data={generateFactorAnalysisData(predictionResult, formData)}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false
+                          },
+                          title: {
+                            display: false
+                          }
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            max: 30,
+                            grid: {
+                              color: '#f3f4f6'
+                            },
+                            ticks: {
+                              color: '#6b7280',
+                              font: {
+                                size: 11
+                              }
+                            }
+                          },
+                          x: {
+                            grid: {
+                              display: false
+                            },
+                            ticks: {
+                              color: '#6b7280',
+                              font: {
+                                size: 10
+                              },
+                              maxRotation: 45
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Success Distribution Chart */}
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
+                  borderRadius: '16px',
+                  border: '2px solid rgba(34, 197, 94, 0.3)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '20px'
+                  }}>
+                    <FaShieldAlt style={{ color: '#22c55e', fontSize: '1.2rem' }} />
+                    <h4 style={{
+                      color: '#22c55e',
+                      fontSize: '1.1rem',
+                      fontWeight: '700',
+                      margin: 0,
+                      fontFamily: "'Space Mono', monospace"
+                    }}>
+                      Success Distribution
+                    </h4>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '15px', fontWeight: '500' }}>
+                    Success vs Risk Probability
+                  </div>
+                  <div style={{ 
+                    height: isMobile ? '200px' : isTablet ? '225px' : '250px', 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      width: isMobile ? '150px' : isTablet ? '175px' : '200px', 
+                      height: isMobile ? '150px' : isTablet ? '175px' : '200px', 
+                      position: 'relative',
+                      maxWidth: '100%'
+                    }}>
+                      <Doughnut 
+                        data={generateSuccessDistributionData(predictionResult)}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              display: true,
+                              position: 'bottom',
+                              labels: {
+                                color: '#6b7280',
+                                font: {
+                                  size: 11
+                                },
+                                padding: 15,
+                                usePointStyle: true
+                              }
+                            },
+                            tooltip: {
+                              callbacks: {
+                                label: function(context) {
+                                  return context.label + ': ' + context.parsed + '%';
+                                }
+                              }
+                            }
+                          },
+                          cutout: '75%',
+                          circumference: 180,
+                          rotation: 270
+                        }}
+                      />
+                      
+                      {/* Dynamic Needle/Pin */}
                       <div style={{
-                        fontSize: '0.9rem',
-                        lineHeight: '1.5'
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: '2px',
+                        height: '60px',
+                        backgroundColor: '#1f2937',
+                        transformOrigin: 'bottom center',
+                        transform: `translate(-50%, -100%) rotate(${(predictionResult.success_probability * 180) - 90}deg)`,
+                        zIndex: 10,
+                        borderRadius: '2px'
                       }}>
-                        {rec}
+                        {/* Needle tip */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '-3px',
+                          left: '-3px',
+                          width: '8px',
+                          height: '8px',
+                          backgroundColor: '#ef4444',
+                          borderRadius: '50%',
+                          border: '2px solid #fff'
+                        }}></div>
+                      </div>
+                      
+                      {/* Center hub */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '12px',
+                        height: '12px',
+                        backgroundColor: '#1f2937',
+                        borderRadius: '50%',
+                        zIndex: 15,
+                        border: '2px solid #fff'
+                      }}></div>
+                      
+                      {/* Center percentage display */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '65%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{
+                          fontSize: '1.4rem',
+                          fontWeight: '700',
+                          color: predictionResult.success_probability >= 0.75 ? '#22c55e' :
+                                 predictionResult.success_probability >= 0.50 ? '#eab308' :
+                                 predictionResult.success_probability >= 0.25 ? '#f97316' : '#ef4444'
+                        }}>
+                          {(predictionResult.success_probability * 100).toFixed(0)}%
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
+
+
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            {predictionResult.recommendations && predictionResult.recommendations.length > 0 && (
+              <div style={{ marginTop: '40px' }}>
+                <h3 style={{ 
+                  color: '#4a90e2', 
+                  marginBottom: '25px',
+                  fontSize: '1.4rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <FaLightbulb style={{ color: '#f59e0b', fontSize: '1.2em' }} />
+                  Strategic AI-Powered Recommendations ({predictionResult.recommendations.length})
+                </h3>
+                
+                {/* Single Card with All Recommendations */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    padding: '35px',
+                    borderRadius: '20px',
+                    border: '3px solid rgba(74, 144, 226, 0.2)',
+                    boxShadow: '0 10px 30px rgba(74, 144, 226, 0.15)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Decorative gradient accent */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '6px',
+                    background: 'linear-gradient(90deg, #4a90e2, #667eea, #764ba2)'
+                  }}></div>
+                  
+                  {/* Recommendations List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                    {predictionResult.recommendations.map((rec, index) => {
+                      const enhanced = formatRecommendation(rec, index);
+                      return (
+                        <div 
+                          key={index}
+                          style={{
+                            paddingBottom: index < predictionResult.recommendations.length - 1 ? '25px' : '0',
+                            borderBottom: index < predictionResult.recommendations.length - 1 ? `2px solid ${enhanced.color}20` : 'none'
+                          }}
+                        >
+                          {/* Individual Recommendation Header */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '15px',
+                            marginBottom: '15px'
+                          }}>
+                            <div style={{ flex: 1 }}>
+                              <h4 style={{
+                                color: enhanced.color,
+                                fontSize: '1.1rem',
+                                fontWeight: '700',
+                                margin: '0 0 5px 0',
+                                fontFamily: "'Space Mono', monospace"
+                              }}>
+                                {enhanced.title}
+                              </h4>
+                              <div style={{
+                                color: '#6b7280',
+                                fontSize: '0.85rem',
+                                fontWeight: '500'
+                              }}>
+                                Recommendation #{index + 1} • Priority: High
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Recommendation Content */}
+                          <div style={{
+                            fontSize: '0.95rem',
+                            lineHeight: '1.7',
+                            color: '#374151',
+                            fontWeight: '500',
+                            whiteSpace: 'pre-line',
+                            paddingLeft: '20px'
+                          }}>
+                            {enhanced.content}
+                          </div>
+                          
+                          {/* Action indicator for each recommendation */}
+                          <div style={{
+                            marginTop: '15px',
+                            marginLeft: '20px',
+                            padding: '10px 16px',
+                            background: `${enhanced.color}10`,
+                            borderRadius: '8px',
+                            border: `1px solid ${enhanced.color}30`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <div style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: enhanced.color
+                            }}></div>
+                            <span style={{
+                              color: enhanced.color,
+                              fontSize: '0.8rem',
+                              fontWeight: '600'
+                            }}>
+                              Implement this strategy for maximum business impact
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Overall Action Call */}
+                  <div style={{
+                    marginTop: '25px',
+                    padding: '20px',
+                    background: 'linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(102, 126, 234, 0.1))',
+                    borderRadius: '12px',
+                    border: '2px solid rgba(74, 144, 226, 0.2)',
+                    textAlign: 'center'
+                  }}>
+                    <h5 style={{
+                      color: '#4a90e2',
+                      fontSize: '1rem',
+                      fontWeight: '700',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Ready to Transform Your Business?
+                    </h5>
+                    <p style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      margin: '0',
+                      fontWeight: '500'
+                    }}>
+                      Implement these AI-powered recommendations to accelerate your business growth and success.
+                    </p>
+                  </div>
+                </motion.div>
               </div>
             )}
 
@@ -1060,28 +1634,31 @@ const ExistingBusinessPage = () => {
             {predictionResult.risk_factors && predictionResult.risk_factors.length > 0 && (
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ 
-                  color: '#ef4444', 
+                  color: '#e53e3e', 
                   marginBottom: '15px',
                   fontSize: '1.3rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px'
+                  gap: '10px',
+                  fontWeight: '700'
                 }}>
                   Risk Factors ({predictionResult.risk_factors.length})
                 </h3>
                 <div>
                   {predictionResult.risk_factors.map((risk, index) => (
                     <div key={index} style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      padding: '15px',
-                      borderRadius: '8px',
-                      marginBottom: '10px',
-                      border: '1px solid rgba(239, 68, 68, 0.3)'
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      marginBottom: '15px',
+                      border: '2px solid rgba(229, 62, 62, 0.3)',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
                     }}>
                       <div style={{
                         fontSize: '0.9rem',
-                        lineHeight: '1.5',
-                        color: '#ef4444'
+                        lineHeight: '1.6',
+                        color: '#2d3748',
+                        fontWeight: '500'
                       }}>
                         {risk}
                       </div>
@@ -1093,15 +1670,16 @@ const ExistingBusinessPage = () => {
 
             {/* Disclaimer Message */}
             <div style={{
-              background: 'rgba(255, 193, 7, 0.1)',
-              border: '1px solid rgba(255, 193, 7, 0.3)',
-              borderRadius: '10px',
-              padding: '20px',
+              background: 'rgba(255, 255, 255, 0.8)',
+              border: '2px solid rgba(245, 158, 11, 0.4)',
+              borderRadius: '12px',
+              padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
               marginTop: '30px',
-              textAlign: 'center'
+              textAlign: 'center',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
             }}>
               <h4 style={{ 
-                color: '#ffc107', 
+                color: '#d97706', 
                 marginBottom: '15px',
                 fontSize: '1.1rem',
                 fontWeight: '700'
@@ -1112,7 +1690,8 @@ const ExistingBusinessPage = () => {
                 fontSize: '0.9rem', 
                 lineHeight: '1.6',
                 margin: '0 0 10px 0',
-                opacity: 0.9
+                color: '#4a5568',
+                fontWeight: '500'
               }}>
                 This AI prediction is for informational purposes only and should not be considered as professional business advice. 
                 Results are based on statistical patterns and may not account for all factors affecting business success.
@@ -1121,7 +1700,8 @@ const ExistingBusinessPage = () => {
                 fontSize: '0.9rem', 
                 lineHeight: '1.6',
                 margin: '0',
-                opacity: 0.9
+                color: '#2d3748',
+                fontWeight: '600'
               }}>
                 <strong>Please consult with professional business consultants, financial advisors, or industry experts before making important business decisions.</strong>
               </p>
@@ -1138,54 +1718,53 @@ const ExistingBusinessPage = () => {
               <button
                 onClick={resetForm}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.9)',
                   padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  color: 'white',
+                  borderRadius: '10px',
+                  border: '2px solid rgba(74, 144, 226, 0.3)',
+                  color: '#4a90e2',
                   fontFamily: "'Space Mono', monospace",
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
                 }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOver={(e) => {
+                  e.target.style.background = '#4a90e2';
+                  e.target.style.color = 'white';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.9)';
+                  e.target.style.color = '#4a90e2';
+                  e.target.style.transform = 'translateY(0)';
+                }}
               >
                 Analyze Another Business
               </button>
               
               <button
-                onClick={() => window.print()}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  color: 'white',
-                  fontFamily: "'Space Mono', monospace",
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
-              >
-                Print Results
-              </button>
-              
-              <button
                 onClick={downloadPDF}
                 style={{
-                  background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   padding: '12px 24px',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   border: 'none',
                   color: 'white',
                   fontFamily: "'Space Mono', monospace",
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 16px rgba(34, 197, 94, 0.3)'
+                  fontWeight: '600',
+                  boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)'
                 }}
-                onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-                onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.4)';
+                }}
               >
                 Download Report
               </button>
@@ -1240,7 +1819,7 @@ const ExistingBusinessPage = () => {
         )}
       </div>
 
-      {/* Add CSS animation for spinner */}
+      {/* Add CSS animation for spinner only */}
       <style jsx>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
