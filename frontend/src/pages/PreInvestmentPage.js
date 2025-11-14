@@ -744,8 +744,8 @@ const PreInvestmentPage = () => {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
-                gap: '20px',
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+                gap: isMobile ? '15px' : '20px',
                 marginTop: '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -829,8 +829,8 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
-                gap: '20px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+                gap: isMobile ? '15px' : '20px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label style={{ marginBottom: '8px', fontWeight: '700', color: '#374151' }}>
@@ -1037,8 +1037,8 @@ const PreInvestmentPage = () => {
             {/* Main Results Cards */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '20px',
+              gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: isMobile ? '15px' : '20px',
               marginBottom: '40px'
             }}>
               <div style={{
@@ -1047,7 +1047,7 @@ const PreInvestmentPage = () => {
                   : 'rgba(239, 68, 68, 0.2)',
                 border: `2px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`,
                 borderRadius: '15px',
-                padding: '25px',
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Business Success</div>
@@ -1064,7 +1064,7 @@ const PreInvestmentPage = () => {
                 background: 'rgba(59, 130, 246, 0.2)',
                 border: '2px solid #3b82f6',
                 borderRadius: '15px',
-                padding: '25px',
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '10px' }}>Success Rate</div>
@@ -1081,15 +1081,15 @@ const PreInvestmentPage = () => {
             {/* Detailed Factor Analysis */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '20px',
+              gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: isMobile ? '15px' : '20px',
               marginBottom: '30px'
             }}>
               <div style={{
                 background: '#ffffff',
                 border: '1px solid #22c55e',
                 borderRadius: '15px',
-                padding: '25px'
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px'
               }}>
                 <h4 style={{ color: '#22c55e', marginBottom: '15px', fontSize: '1.2rem' }}>
                   Financial Factors
@@ -1114,7 +1114,7 @@ const PreInvestmentPage = () => {
                 background: '#ffffff',
                 border: '1px solid #3b82f6',
                 borderRadius: '15px',
-                padding: '25px'
+                padding: isMobile ? '15px' : isTablet ? '20px' : '25px'
               }}>
                 <h4 style={{ color: '#3b82f6', marginBottom: '15px', fontSize: '1.2rem' }}>
                   Human Capital
@@ -1157,15 +1157,15 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
-                gap: '25px'
+                gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr' : 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
+                gap: isMobile ? '20px' : '25px'
               }}>
                 {/* Success Probability Chart */}
                 <div style={{
                   background: '#ffffff',
                   border: '2px solid #e5e7eb',
                   borderRadius: '12px',
-                  padding: '20px',
+                  padding: isMobile ? '12px' : isTablet ? '16px' : '20px',
                   overflow: 'hidden'
                 }}>
                   <h4 style={{
@@ -1282,7 +1282,7 @@ const PreInvestmentPage = () => {
                   background: '#ffffff',
                   border: '2px solid #e5e7eb',
                   borderRadius: '12px',
-                  padding: '20px'
+                  padding: isMobile ? '12px' : isTablet ? '16px' : '20px'
                 }}>
                   <h4 style={{
                     color: '#1f2937',
@@ -1501,7 +1501,7 @@ const PreInvestmentPage = () => {
             <div style={{
               background: '#ffffff',
               borderRadius: '15px',
-              padding: '25px',
+              padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
               marginBottom: '30px',
               border: '1px solid rgba(34, 197, 94, 0.3)'
             }}>
@@ -1522,8 +1522,8 @@ const PreInvestmentPage = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '15px',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: isMobile ? '10px' : '15px',
                 marginTop: '20px'
               }}>
                 <div style={{
@@ -1672,7 +1672,7 @@ const PreInvestmentPage = () => {
               background: 'rgba(255, 193, 7, 0.15)',
               border: '2px solid #ffc107',
               borderRadius: '12px',
-              padding: '25px',
+              padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
               marginTop: '30px',
               textAlign: 'center',
               boxShadow: '0 4px 16px rgba(255, 193, 7, 0.2)'
