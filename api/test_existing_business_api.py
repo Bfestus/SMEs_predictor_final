@@ -1,23 +1,35 @@
+import unittest
 import requests
 import json
 
 # Test the API endpoints
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/docs#/default/predict_sme_success_predict_post"
 
-def test_health():
-    """Test health endpoint"""
-    try:
-        response = requests.get(f"{BASE_URL}/health")
-        print(f"Health Check: {response.status_code}")
-        print(f"Response: {response.json()}")
-        return True
-    except Exception as e:
-        print(f"Health check failed: {e}")
-        return False
 
-def test_prediction():
-    """Test prediction endpoint"""
-    try:
+class TestExistingBusinessAPI(unittest.TestCase):
+    """Test cases for Existing Business Predictor API"""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Set up test fixtures before running tests"""
+        print("🧪 Testing Existing Business Predictor API")
+        print("=" * 50)
+    
+    def test_1_health_check(self):
+        """Test health endpoint"""
+        try:
+            response = requests.get(f"{BASE_URL}/health")
+            self.assertEqual(response.status_code, 200, "Health check should return 200")
+            
+            health_data = response.json()
+            print(f"✅ Health check")
+            
+        except Exception as e:
+            print(f"❌ Health check")
+            self.fail(f"Health check failed: {e}")
+    
+    def test_2_existing_business_prediction(self):
+        """Test existing business prediction endpoint"""
         # Sample data matching the frontend form
         test_data = {
             "business_capital": 25000000,
@@ -36,36 +48,38 @@ def test_prediction():
             "employment_growth": "Increased"
         }
         
-        response = requests.post(f"{BASE_URL}/predict-existing-business", json=test_data)
-        print(f"\nPrediction Test: {response.status_code}")
-        
-        if response.status_code == 200:
-            result = response.json()
-            print(f"Prediction: {result['prediction']}")
-            print(f"Success Probability: {result['success_probability']:.3f}")
-            print(f"Confidence: {result['confidence']:.3f}")
-            print(f"Number of Recommendations: {len(result['recommendations'])}")
-            print("Recommendations:")
-            for i, rec in enumerate(result['recommendations'], 1):
-                print(f"  {rec}")
-            return True
-        else:
-            print(f"Error: {response.text}")
-            return False
+        try:
+            response = requests.post(f"{BASE_URL}/predict-existing-business", json=test_data)
+            self.assertEqual(response.status_code, 200, "Prediction should return 200")
             
-    except Exception as e:
-        print(f"Prediction test failed: {e}")
-        return False
+            result = response.json()
+            
+            # Validate response structure
+            required_fields = ['prediction', 'success_probability', 'confidence', 'recommendations']
+            for field in required_fields:
+                self.assertIn(field, result, f"Response should contain {field}")
+            
+            self.assertIn(result['prediction'], ['Success', 'Failure'], 
+                         "Prediction should be Success or Failure")
+            self.assertGreaterEqual(result['success_probability'], 0, 
+                                  "Success probability should be >= 0")
+            self.assertLessEqual(result['success_probability'], 1, 
+                               "Success probability should be <= 1")
+            self.assertIsInstance(result['recommendations'], list, 
+                                "Recommendations should be a list")
+            
+            print(f"✅ Business prediction")
+                
+        except Exception as e:
+            print(f"❌ Business prediction")
+            self.fail(f"Prediction test failed: {e}")
+    
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up after tests"""
+        print(f"\n🎉 Existing Business API testing completed!")
+        print(f"📝 To start the API server, run: uvicorn main2:app --reload --port 8000")
+
 
 if __name__ == "__main__":
-    print("Testing Existing Business Predictor API...")
-    print("=" * 50)
-    
-    # Test health endpoint
-    if test_health():
-        print("\n" + "=" * 50)
-        # Test prediction endpoint
-        test_prediction()
-    else:
-        print("API is not running. Please start it first using:")
-        print("uvicorn main2:app --reload --port 8000")
+    unittest.main(verbosity=2)
