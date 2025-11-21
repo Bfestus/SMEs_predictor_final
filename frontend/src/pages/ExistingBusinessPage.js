@@ -498,7 +498,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
       addSectionHeader('PREDICTION RESULTS');
       
       // Main result with color
-      const isSuccess = predictionResult.prediction === 'Success';
+      const isSuccess = (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1);
       pdf.setTextColor(isSuccess ? 0 : 200, isSuccess ? 150 : 0, 0);
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
@@ -618,7 +618,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
         console.log('API Response:', response.data);
         
         // Check if response has prediction data (even if success is false)
-        if (response.data && response.data.prediction) {
+        if (response.data && (response.data.prediction !== undefined || response.data.prediction_label)) {
           toast.success('Prediction completed successfully!');
           setPredictionResult(response.data);
           setShowResults(true);
@@ -656,7 +656,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
           console.log('Fallback API Response:', fallbackResponse.data);
           
           // Check if response has prediction data (even if success is false)
-          if (fallbackResponse.data && fallbackResponse.data.prediction) {
+          if (fallbackResponse.data && (fallbackResponse.data.prediction !== undefined || fallbackResponse.data.prediction_label)) {
             toast.success('Prediction completed successfully!', { id: 'api-fallback' });
             setPredictionResult(fallbackResponse.data);
             setShowResults(true);
@@ -730,7 +730,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
   return (
     <div style={{
       fontFamily: "'Space Mono', monospace",
-      background: 'linear-gradient(135deg, #6495ED 0%, #4169E1 100%)',
+      background: 'linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%)',
       color: '#1a1a1a',
       minHeight: '100vh',
       padding: isMobile ? '10px' : isTablet ? '15px' : '20px'
@@ -744,7 +744,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
           <h1 style={{
             fontSize: isMobile ? '2rem' : isTablet ? '2.2rem' : '2.5rem',
             marginBottom: '10px',
-            color: 'white',
+            color: '#2d3748',
             fontWeight: '800',
             lineHeight: '1.2',
             padding: isMobile ? '0 10px' : '0'
@@ -753,8 +753,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
           </h1>
           <p style={{ 
             fontSize: isMobile ? '1rem' : '1.1rem', 
-            opacity: 0.7, 
-            color: 'white',
+            color: '#4a5568',
             padding: isMobile ? '0 10px' : '0'
           }}>
             AI-powered analysis of your business performance with SHAP-based recommendations
@@ -1139,7 +1138,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
               color: '#1a1a1a',
               fontWeight: '800'
             }}>
-              {predictionResult.prediction === 'Success' ? 'Business Success Prediction' : 'Business Risk Assessment'}
+              {(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? 'Business Success Prediction' : 'Business Risk Assessment'}
             </h2>
 
             {/* Main Prediction Cards */}
@@ -1152,7 +1151,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
             }}>
               <div style={{
                 background: 'rgba(255, 255, 255, 0.9)',
-                border: `2px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`,
+                border: `2px solid ${(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'}`,
                 borderRadius: '15px',
                 padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
                 textAlign: 'center',
@@ -1162,7 +1161,7 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                 <div style={{
                   fontSize: '2rem',
                   fontWeight: '700',
-                  color: predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'
+                  color: (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'
                 }}>
                   {predictionResult.prediction}
                 </div>

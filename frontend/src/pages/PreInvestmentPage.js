@@ -473,7 +473,7 @@ const PreInvestmentPage = () => {
         console.log('API Response:', response.data);
         
         // Check if response has prediction data (even if success is false)
-        if (response.data && response.data.prediction) {
+        if (response.data && (response.data.prediction !== undefined || response.data.prediction_label)) {
           toast.success('Prediction completed successfully!');
           setPredictionResult(response.data);
           setShowResults(true);
@@ -508,7 +508,7 @@ const PreInvestmentPage = () => {
             console.log('Deployed API Response:', response.data);
             
             // Check if response has prediction data (even if success is false)
-            if (response.data && response.data.prediction) {
+            if (response.data && (response.data.prediction !== undefined || response.data.prediction_label)) {
               toast.success('Prediction completed successfully!', { id: 'api-fallback' });
               setPredictionResult(response.data);
               setShowResults(true);
@@ -590,7 +590,7 @@ const PreInvestmentPage = () => {
   return (
     <div style={{
       fontFamily: "'Space Mono', monospace",
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #1e40af 100%)',
+      background: 'linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%)',
       color: 'white',
       minHeight: '100vh',
       padding: isMobile ? '8px' : isTablet ? '15px' : '20px',
@@ -608,14 +608,14 @@ const PreInvestmentPage = () => {
           <h1 style={{
             fontSize: isMobile ? '2rem' : isTablet ? '2.2rem' : '2.5rem',
             marginBottom: '10px',
-            color: 'white',
+            color: '#2d3748',
             fontWeight: '800'
           }}>
             Pre-Investment Success Predictor
           </h1>
           <p style={{ 
             fontSize: isMobile ? '1rem' : '1.1rem', 
-            opacity: 0.8,
+            color: '#4a5568',
             padding: isMobile ? '0 10px' : '0'
           }}>
             AI-powered analysis for your business idea with personalized recommendations
@@ -917,7 +917,7 @@ const PreInvestmentPage = () => {
         </div>
 
         {/* Results Section */}
-        {showResults && predictionResult && predictionResult.success_probability !== undefined && (
+        {showResults && predictionResult && (
           <div
             id="prediction-results"
             style={{
@@ -955,10 +955,10 @@ const PreInvestmentPage = () => {
               marginBottom: '40px'
             }}>
               <div style={{
-                background: predictionResult.prediction === 'Success' 
+                background: (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1)
                   ? 'rgba(34, 197, 94, 0.2)' 
                   : 'rgba(239, 68, 68, 0.2)',
-                border: `2px solid ${predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'}`,
+                border: `2px solid ${(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'}`,
                 borderRadius: '15px',
                 padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
                 textAlign: 'center'
@@ -967,9 +967,9 @@ const PreInvestmentPage = () => {
                 <div style={{
                   fontSize: '2rem',
                   fontWeight: '700',
-                  color: predictionResult.prediction === 'Success' ? '#22c55e' : '#ef4444'
+                  color: (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'
                 }}>
-                  {predictionResult.prediction === 'Success' ? 'High Potential' : predictionResult.prediction === 'Moderate Success' ? 'Moderate Potential' : 'Needs Improvement'}
+                  {(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? 'High Potential' : 'Needs Improvement'}
                 </div>
               </div>
 
