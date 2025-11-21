@@ -955,10 +955,20 @@ const PreInvestmentPage = () => {
               marginBottom: '40px'
             }}>
               <div style={{
-                background: (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1)
-                  ? 'rgba(34, 197, 94, 0.2)' 
-                  : 'rgba(239, 68, 68, 0.2)',
-                border: `2px solid ${(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'}`,
+                background: (() => {
+                  const successRate = (predictionResult.success_probability || 0) * 100;
+                  if (successRate >= 80) return 'rgba(34, 197, 94, 0.2)';
+                  if (successRate >= 60) return 'rgba(16, 185, 129, 0.2)';
+                  if (successRate >= 40) return 'rgba(245, 158, 11, 0.2)';
+                  return 'rgba(239, 68, 68, 0.2)';
+                })(),
+                border: `2px solid ${(() => {
+                  const successRate = (predictionResult.success_probability || 0) * 100;
+                  if (successRate >= 80) return '#22c55e';
+                  if (successRate >= 60) return '#10b981';
+                  if (successRate >= 40) return '#f59e0b';
+                  return '#ef4444';
+                })()}`,
                 borderRadius: '15px',
                 padding: isMobile ? '15px' : isTablet ? '20px' : '25px',
                 textAlign: 'center'
@@ -967,9 +977,23 @@ const PreInvestmentPage = () => {
                 <div style={{
                   fontSize: '2rem',
                   fontWeight: '700',
-                  color: (predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? '#22c55e' : '#ef4444'
+                  color: (() => {
+                    const successRate = (predictionResult.success_probability || 0) * 100;
+                    if (successRate >= 80) return '#22c55e';
+                    if (successRate >= 60) return '#10b981';
+                    if (successRate >= 40) return '#f59e0b';
+                    return '#ef4444';
+                  })()
                 }}>
-                  {(predictionResult.prediction_label === 'Successful' || predictionResult.prediction === 1) ? 'High Potential' : 'Needs Improvement'}
+                  {(() => {
+                    const successRate = (predictionResult.success_probability || 0) * 100;
+                    if (successRate >= 85) return 'Excellent Potential';
+                    if (successRate >= 75) return 'High Potential';
+                    if (successRate >= 65) return 'Good Potential';
+                    if (successRate >= 50) return 'Moderate Potential';
+                    if (successRate >= 35) return 'Limited Potential';
+                    return 'High Risk';
+                  })()}
                 </div>
               </div>
 
