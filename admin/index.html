@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SME Predictor - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-chart-line"></i>
+            <h2>SME Predictor</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="#" class="nav-item active" data-section="overview">
+                <i class="fas fa-home"></i>
+                <span>Overview</span>
+            </a>
+            <a href="#" class="nav-item" data-section="predictions">
+                <i class="fas fa-list"></i>
+                <span>All Predictions</span>
+            </a>
+            <a href="#" class="nav-item" data-section="analytics">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="nav-item" data-section="statistics">
+                <i class="fas fa-calculator"></i>
+                <span>Statistics</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="refresh-btn" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i>
+                <span>Refresh Data</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 id="page-title">Dashboard Overview</h1>
+                <p class="subtitle">Monitor predictions and system performance</p>
+            </div>
+            <div class="header-right">
+                <div class="last-updated">
+                    <i class="fas fa-clock"></i>
+                    <span id="last-updated">Loading...</span>
+                </div>
+                <button class="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Overview Section -->
+        <section id="overview-section" class="content-section active">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Predictions</h3>
+                        <p class="stat-value" id="total-predictions">0</p>
+                        <span class="stat-label">All time</span>
+                    </div>
+                </div>
+
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Today's Predictions</h3>
+                        <p class="stat-value" id="today-predictions">0</p>
+                        <span class="stat-label">Last 24 hours</span>
+                    </div>
+                </div>
+
+                <div class="stat-card info">
+                    <div class="stat-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>New Business</h3>
+                        <p class="stat-value" id="new-business-count">0</p>
+                        <span class="stat-label" id="new-business-rate">0% success rate</span>
+                    </div>
+                </div>
+
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Existing Business</h3>
+                        <p class="stat-value" id="existing-business-count">0</p>
+                        <span class="stat-label" id="existing-business-rate">0% success rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Predictions Last 7 Days</h3>
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div id="predictions-chart" class="chart-content"></div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Success Rate Comparison</h3>
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div id="success-rate-chart" class="chart-content"></div>
+                </div>
+            </div>
+
+            <!-- Recent Predictions -->
+            <div class="recent-predictions-card">
+                <div class="card-header">
+                    <h3>Recent Predictions</h3>
+                    <button class="view-all-btn" onclick="switchSection('predictions')">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div id="recent-predictions-list" class="predictions-list"></div>
+            </div>
+        </section>
+
+        <!-- All Predictions Section -->
+        <section id="predictions-section" class="content-section">
+            <div class="section-controls">
+                <div class="filter-group">
+                    <label>Filter by type:</label>
+                    <select id="prediction-filter" onchange="filterPredictions()">
+                        <option value="all">All Predictions</option>
+                        <option value="new_business">New Business</option>
+                        <option value="existing_business">Existing Business</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-predictions" placeholder="Search predictions..." oninput="searchPredictions()">
+                </div>
+            </div>
+            <div id="all-predictions-list" class="predictions-list detailed"></div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics-section" class="content-section">
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <h3>Prediction Trends</h3>
+                        <select id="trend-period">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                        </select>
+                    </div>
+                    <div id="trend-chart" class="analytics-chart"></div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <h3>Prediction Distribution</h3>
+                    </div>
+                    <div id="distribution-chart" class="analytics-chart">
+                        <div class="pie-chart-container">
+                            <canvas id="distribution-pie"></canvas>
+                        </div>
+                        <div class="pie-legend" id="pie-legend"></div>
+                    </div>
+                </div>
+
+                <div class="analytics-card full-width">
+                    <div class="analytics-header">
+                        <h3>Confidence Levels (New Business)</h3>
+                    </div>
+                    <div id="confidence-chart" class="analytics-chart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Section -->
+        <section id="statistics-section" class="content-section">
+            <div class="statistics-grid">
+                <div class="statistics-card">
+                    <h3><i class="fas fa-rocket"></i> New Business Statistics</h3>
+                    <div class="statistics-content" id="new-business-stats"></div>
+                </div>
+
+                <div class="statistics-card">
+                    <h3><i class="fas fa-briefcase"></i> Existing Business Statistics</h3>
+                    <div class="statistics-content" id="existing-business-stats"></div>
+                </div>
+            </div>
+
+            <div class="detailed-stats-card">
+                <h3>Detailed Metrics</h3>
+                <div id="detailed-metrics" class="metrics-grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading dashboard data...</p>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
