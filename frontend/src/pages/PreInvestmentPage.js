@@ -57,6 +57,7 @@ const PreInvestmentPage = () => {
   const [showResults, setShowResults] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const navigate = useNavigate();
 
   // Responsive state
@@ -158,6 +159,11 @@ const PreInvestmentPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
     
     // Check if this is a numeric field that needs formatting
     const numericFields = ['business_capital', 'number_of_employees'];
@@ -443,8 +449,40 @@ const PreInvestmentPage = () => {
     setShowError(false);
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate business capital
+    const capital = parseInt(parseNumber(formData.business_capital)) || 0;
+    if (capital < 50000) {
+      errors.business_capital = 'Business capital must be at least 50,000 RWF';
+    } else if (capital > 75000000) {
+      errors.business_capital = 'Business capital cannot exceed 75,000,000 RWF';
+    }
+    
+    // Validate number of employees
+    const employees = parseInt(parseNumber(formData.number_of_employees)) || 0;
+    if (employees < 0) {
+      errors.number_of_employees = 'Number of employees cannot be negative';
+    } else if (employees > 100) {
+      errors.number_of_employees = 'Number of employees cannot exceed 100';
+    }
+    
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error('Please fix the validation errors before submitting');
+      return;
+    }
+    
+    setValidationErrors({});
     setIsLoading(true);
     setErrorDetails(null);
     setShowError(false);
@@ -665,9 +703,23 @@ const PreInvestmentPage = () => {
                     value={formData.business_capital}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 1,200,000"
-                    style={inputStyle}
+                    placeholder="Min: 50,000 | Max: 75,000,000 RWF"
+                    style={{
+                      ...inputStyle,
+                      borderColor: validationErrors.business_capital ? '#ef4444' : inputStyle.borderColor
+                    }}
+                    title="Enter amount between 50,000 and 75,000,000 RWF"
                   />
+                  {validationErrors.business_capital && (
+                    <span style={{ 
+                      color: '#ef4444', 
+                      fontSize: '0.875rem', 
+                      marginTop: '4px',
+                      display: 'block'
+                    }}>
+                      {validationErrors.business_capital}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -680,9 +732,23 @@ const PreInvestmentPage = () => {
                     value={formData.number_of_employees}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 5"
-                    style={inputStyle}
+                    placeholder="Min: 0 | Max: 100"
+                    style={{
+                      ...inputStyle,
+                      borderColor: validationErrors.number_of_employees ? '#ef4444' : inputStyle.borderColor
+                    }}
+                    title="Enter number of employees between 0 and 100"
                   />
+                  {validationErrors.number_of_employees && (
+                    <span style={{ 
+                      color: '#ef4444', 
+                      fontSize: '0.875rem', 
+                      marginTop: '4px',
+                      display: 'block'
+                    }}>
+                      {validationErrors.number_of_employees}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>

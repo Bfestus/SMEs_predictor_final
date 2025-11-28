@@ -65,6 +65,7 @@ const ExistingBusinessPage = () => {
   const [showResults, setShowResults] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   // Responsive design helpers - adjusted for better mobile detection
@@ -337,6 +338,11 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
     // Check if this is a numeric field that needs formatting
     const numericFields = [
       'business_capital',
@@ -577,8 +583,60 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
     setShowError(false);
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate business capital
+    const capital = parseInt(parseNumber(formData.business_capital)) || 0;
+    if (capital < 50000) {
+      errors.business_capital = 'Business capital must be at least 50,000 RWF';
+    } else if (capital > 75000000) {
+      errors.business_capital = 'Business capital cannot exceed 75,000,000 RWF';
+    }
+    
+    // Validate revenues for all years
+    const revenueFields = ['turnover_first_year', 'turnover_second_year', 'turnover_third_year', 'turnover_fourth_year'];
+    revenueFields.forEach(field => {
+      const revenue = parseInt(parseNumber(formData[field])) || 0;
+      if (revenue < 0) {
+        errors[field] = 'Revenue cannot be negative';
+      } else if (revenue > 60000000) {
+        errors[field] = 'Revenue cannot exceed 60,000,000 RWF';
+      }
+    });
+    
+    // Validate employees for all years
+    const employeeFields = ['employment_first_year', 'employment_second_year', 'employment_third_year', 'employment_fourth_year'];
+    employeeFields.forEach(field => {
+      const employees = parseInt(parseNumber(formData[field])) || 0;
+      if (employees < 0) {
+        errors[field] = 'Number of employees cannot be negative';
+      } else if (employees > 100) {
+        errors[field] = 'Number of employees cannot exceed 100';
+      }
+    });
+    
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error('Please fix the validation errors before submitting');
+      // Scroll to first error
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.getElementsByName(firstErrorField)[0];
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    setValidationErrors({});
     setIsLoading(true);
     setErrorDetails(null);
     setShowError(false);
@@ -800,10 +858,11 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                     value={formData.business_capital}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 1,200,000"
+                    placeholder="Min: 50,000 | Max: 75,000,000 RWF"
+                    title="Enter amount between 50,000 and 75,000,000 RWF"
                     style={{
                       padding: '14px 16px',
-                      border: '2px solid #e2e8f0',
+                      border: `2px solid ${validationErrors.business_capital ? '#ef4444' : '#e2e8f0'}`,
                       borderRadius: '8px',
                       background: '#ffffff',
                       color: '#2d3748',
@@ -813,9 +872,19 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                       transition: 'border-color 0.2s ease',
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                    onFocus={(e) => e.target.style.borderColor = validationErrors.business_capital ? '#ef4444' : '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = validationErrors.business_capital ? '#ef4444' : '#e2e8f0'}
                   />
+                  {validationErrors.business_capital && (
+                    <span style={{ 
+                      color: '#ef4444', 
+                      fontSize: '0.875rem', 
+                      marginTop: '4px',
+                      display: 'block'
+                    }}>
+                      {validationErrors.business_capital}
+                    </span>
+                  )}
                 </div>
 
 
@@ -994,10 +1063,11 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                       value={formData[`turnover_${year}_year`]}
                       onChange={handleInputChange}
                       required
-                      placeholder={`e.g., ${(12000000 + (index * 6000000)).toLocaleString()}`}
+                      placeholder={`Min: 0 | Max: 60,000,000 RWF`}
+                      title="Enter revenue between 0 and 60,000,000 RWF"
                       style={{
                         padding: '14px 16px',
-                        border: '2px solid #e2e8f0',
+                        border: `2px solid ${validationErrors[`turnover_${year}_year`] ? '#ef4444' : '#e2e8f0'}`,
                         borderRadius: '8px',
                         background: '#ffffff',
                         color: '#2d3748',
@@ -1007,9 +1077,19 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                         transition: 'border-color 0.2s ease',
                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                       }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      onFocus={(e) => e.target.style.borderColor = validationErrors[`turnover_${year}_year`] ? '#ef4444' : '#667eea'}
+                      onBlur={(e) => e.target.style.borderColor = validationErrors[`turnover_${year}_year`] ? '#ef4444' : '#e2e8f0'}
                     />
+                    {validationErrors[`turnover_${year}_year`] && (
+                      <span style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '4px',
+                        display: 'block'
+                      }}>
+                        {validationErrors[`turnover_${year}_year`]}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1043,10 +1123,11 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                       name={`employment_${year}_year`}
                       value={formData[`employment_${year}_year`]}
                       onChange={handleInputChange}
-                      placeholder={`e.g., ${5 + (index * 3)}`}
+                      placeholder="Min: 0 | Max: 100"
+                      title="Enter number of employees between 0 and 100"
                       style={{
                         padding: '14px 16px',
-                        border: '2px solid #e2e8f0',
+                        border: `2px solid ${validationErrors[`employment_${year}_year`] ? '#ef4444' : '#e2e8f0'}`,
                         borderRadius: '8px',
                         background: '#ffffff',
                         color: '#2d3748',
@@ -1056,9 +1137,19 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                         transition: 'border-color 0.2s ease',
                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                       }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      onFocus={(e) => e.target.style.borderColor = validationErrors[`employment_${year}_year`] ? '#ef4444' : '#667eea'}
+                      onBlur={(e) => e.target.style.borderColor = validationErrors[`employment_${year}_year`] ? '#ef4444' : '#e2e8f0'}
                     />
+                    {validationErrors[`employment_${year}_year`] && (
+                      <span style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '4px',
+                        display: 'block'
+                      }}>
+                        {validationErrors[`employment_${year}_year`]}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
