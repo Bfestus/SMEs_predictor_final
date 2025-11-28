@@ -1,5 +1,22 @@
-// Configuration
-const API_URL = 'http://localhost:8000';
+// Configuration - Try local first, fallback to production
+const LOCAL_API = 'http://localhost:8000';
+const PRODUCTION_API = 'https://smes-predictor-final.onrender.com';
+let API_URL = LOCAL_API;
+
+// Test which API is available
+async function detectAPI() {
+    try {
+        const response = await fetch(`${LOCAL_API}/health`, { method: 'GET', signal: AbortSignal.timeout(2000) });
+        if (response.ok) {
+            API_URL = LOCAL_API;
+            console.log('Using local API');
+            return;
+        }
+    } catch (error) {
+        console.log('Local API not available, using production');
+    }
+    API_URL = PRODUCTION_API;
+}
 
 // Global state
 let dashboardData = null;
@@ -7,7 +24,8 @@ let allPredictions = [];
 let filteredPredictions = [];
 
 // Initialize dashboard
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await detectAPI();
     initializeNavigation();
     loadDashboardData();
     setInterval(loadDashboardData, 60000); // Auto-refresh every 60 seconds
