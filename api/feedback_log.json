@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2025-11-28T21:43:13.475066",
+    "name": "festus ",
+    "email": null,
+    "prediction_type": "new_business",
+    "message": "its good",
+    "status": "read"
+  },
+  {
+    "id": 2,
+    "timestamp": "2025-11-28T21:47:37.239805",
+    "name": null,
+    "email": null,
+    "prediction_type": "new_business",
+    "message": "please improve the model training ",
+    "status": "unread"
+  },
+  {
+    "id": 3,
+    "timestamp": "2025-11-28T21:53:13.865617",
+    "name": null,
+    "email": null,
+    "prediction_type": "existing_business",
+    "message": "thats good\n",
+    "status": "unread"
+  }
+]

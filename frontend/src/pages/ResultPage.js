@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend, } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import toast from 'react-hot-toast';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -12,6 +13,12 @@ const ResultPage = () => {
   const navigate = useNavigate();
   const resultsRef = useRef(null);
   const prediction = location.state;
+  
+  // Feedback state
+  const [feedbackName, setFeedbackName] = useState('');
+  const [feedbackEmail, setFeedbackEmail] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   console.log('ResultPage - Location state:', location.state);
   console.log('ResultPage - Prediction data:', prediction);
@@ -140,6 +147,49 @@ const ResultPage = () => {
       pdf.save('SME_Prediction_Report.pdf');
     } catch (err) {
       console.error('PDF error', err);
+    }
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!feedbackMessage.trim()) {
+      toast.error('Please enter your feedback');
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const predictionType = prediction.risk_factors ? 'existing_business' : 'new_business';
+      
+      const response = await fetch(`${API_URL}/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: feedbackName || null,
+          email: feedbackEmail || null,
+          prediction_type: predictionType,
+          message: feedbackMessage
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Thank you for your feedback!');
+        setFeedbackName('');
+        setFeedbackEmail('');
+        setFeedbackMessage('');
+      } else {
+        toast.error('Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('Feedback error:', error);
+      toast.error('Error submitting feedback');
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -408,10 +458,62 @@ const ResultPage = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center mb-8">
             <button className="btn-secondary py-2 px-6" onClick={() => navigate('/predictor')}>Try Another Prediction</button>
             <button className="btn-primary py-2 px-6" onClick={generatePDFReport}>Download Report (PDF)</button>
           </div>
+        </div>
+
+        {/* Feedback Section - Outside PDF ref */}
+        <div className="mt-8 bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500">
+            <h3 className="text-lg font-semibold mb-3 text-gray-800">
+              💬 Share Your Feedback
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Help us improve! Share your thoughts about this prediction or any suggestions.
+            </p>
+            
+            <form onSubmit={handleFeedbackSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={feedbackName}
+                  onChange={(e) => setFeedbackName(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+                <input
+                  type="email"
+                  placeholder="Your email (optional)"
+                  value={feedbackEmail}
+                  onChange={(e) => setFeedbackEmail(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+              </div>
+              
+              <textarea
+                placeholder="Share your feedback, comments, or suggestions..."
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                rows="3"
+                maxLength="1000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                required
+              />
+              
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">
+                  {feedbackMessage.length}/1000 characters
+                </span>
+                <button
+                  type="submit"
+                  disabled={feedbackSubmitting}
+                  className="btn-primary py-2 px-6 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {feedbackSubmitting ? 'Sending...' : 'Send Feedback'}
+                </button>
+              </div>
+            </form>
         </div>
       </div>
     </div>

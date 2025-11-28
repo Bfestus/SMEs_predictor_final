@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { FaChartLine, FaLightbulb, FaShieldAlt } from 'react-icons/fa';
+import FeedbackForm from '../components/FeedbackForm';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement);
@@ -1768,6 +1769,9 @@ Develop growth plans with clear milestones and build strategic partnerships. Gro
                 Download Report
               </button>
             </div>
+
+            {/* Feedback Section */}
+            <FeedbackForm predictionType="existing_business" />
           </div>
         )}
 

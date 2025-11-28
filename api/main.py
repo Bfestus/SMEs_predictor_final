@@ -16,6 +16,7 @@ import shap
 
 # Prediction tracking file path
 PREDICTIONS_LOG_FILE = "predictions_log.json"
+FEEDBACK_LOG_FILE = "feedback_log.json"
 
 def log_prediction(prediction_type: str, input_data: dict, prediction_result: dict):
     """Log prediction to JSON file for admin tracking"""
@@ -261,6 +262,13 @@ class PredictionResponse(BaseModel):
     confidence_level: Optional[str] = None
     recommendations: Optional[List[str]] = None  # Changed to List[str] for SHAP recommendations
     error: Optional[str] = None
+
+class FeedbackData(BaseModel):
+    """User feedback model"""
+    name: Optional[str] = Field(None, description="User's name (optional)")
+    email: Optional[str] = Field(None, description="User's email (optional)")
+    prediction_type: str = Field(..., description="Type of prediction (new_business or existing_business)")
+    message: str = Field(..., description="User's feedback or comment", min_length=1, max_length=1000)
 
 # ===== EXISTING BUSINESS DATA MODELS =====
 
@@ -1157,6 +1165,111 @@ async def clear_prediction_logs():
             return {"message": "No prediction logs to clear"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing logs: {str(e)}")
+
+# ===== FEEDBACK ENDPOINTS =====
+
+@app.post("/feedback", tags=["Feedback"])
+async def submit_feedback(feedback: FeedbackData):
+    """Submit user feedback or comment"""
+    try:
+        # Load existing feedback
+        if os.path.exists(FEEDBACK_LOG_FILE):
+            with open(FEEDBACK_LOG_FILE, 'r') as f:
+                feedback_logs = json.load(f)
+        else:
+            feedback_logs = []
+        
+        # Create new feedback entry
+        feedback_entry = {
+            "id": len(feedback_logs) + 1,
+            "timestamp": datetime.now().isoformat(),
+            "name": feedback.name,
+            "email": feedback.email,
+            "prediction_type": feedback.prediction_type,
+            "message": feedback.message,
+            "status": "unread"
+        }
+        
+        # Append and save
+        feedback_logs.append(feedback_entry)
+        with open(FEEDBACK_LOG_FILE, 'w') as f:
+            json.dump(feedback_logs, f, indent=2)
+        
+        return {
+            "success": True,
+            "message": "Thank you for your feedback!",
+            "feedback_id": feedback_entry["id"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving feedback: {str(e)}")
+
+@app.get("/admin/messages", tags=["Admin"])
+async def get_all_messages(limit: int = 100, status: Optional[str] = None):
+    """Get all user feedback messages"""
+    try:
+        if not os.path.exists(FEEDBACK_LOG_FILE):
+            return {
+                "total": 0,
+                "unread": 0,
+                "messages": [],
+                "message": "No feedback messages yet"
+            }
+        
+        with open(FEEDBACK_LOG_FILE, 'r') as f:
+            messages = json.load(f)
+        
+        # Filter by status if provided
+        if status:
+            filtered_messages = [msg for msg in messages if msg.get("status") == status]
+        else:
+            filtered_messages = messages
+        
+        # Count unread
+        unread_count = sum(1 for msg in messages if msg.get("status") == "unread")
+        
+        # Apply limit and reverse (newest first)
+        limited_messages = filtered_messages[-limit:][::-1]
+        
+        return {
+            "total": len(messages),
+            "unread": unread_count,
+            "returned": len(limited_messages),
+            "messages": limited_messages,
+            "filters": {"status": status, "limit": limit}
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching messages: {str(e)}")
+
+@app.patch("/admin/messages/{message_id}/read", tags=["Admin"])
+async def mark_message_read(message_id: int):
+    """Mark a message as read"""
+    try:
+        if not os.path.exists(FEEDBACK_LOG_FILE):
+            raise HTTPException(status_code=404, detail="No messages found")
+        
+        with open(FEEDBACK_LOG_FILE, 'r') as f:
+            messages = json.load(f)
+        
+        # Find and update message
+        message_found = False
+        for msg in messages:
+            if msg["id"] == message_id:
+                msg["status"] = "read"
+                message_found = True
+                break
+        
+        if not message_found:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        # Save updated messages
+        with open(FEEDBACK_LOG_FILE, 'w') as f:
+            json.dump(messages, f, indent=2)
+        
+        return {"success": True, "message": "Message marked as read"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating message: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

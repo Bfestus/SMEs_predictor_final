@@ -204,5 +204,177 @@
       "success_probability": 0.6039,
       "confidence_level": "Medium"
     }
+  },
+  {
+    "id": 9,
+    "timestamp": "2025-11-28T21:29:16.876792",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 100000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Bank Loan",
+      "business_sector": "Administrative And Support Service Activities",
+      "number_of_employees": 0,
+      "business_location": "KARONGI",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 1
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.6039,
+      "confidence_level": "Medium"
+    }
+  },
+  {
+    "id": 10,
+    "timestamp": "2025-11-28T21:31:49.292463",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 12000000.0,
+      "owner_age": 34,
+      "owner_business_experience": 2,
+      "capital_source": "Bank Loan",
+      "business_sector": "Human Health And Social Work Activities",
+      "number_of_employees": 4,
+      "business_location": "GISAGARA",
+      "entity_type": "INDIVIDUAL",
+      "owner_gender": "M",
+      "education_level_numeric": 1
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5674,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 11,
+    "timestamp": "2025-11-28T21:35:48.702960",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1000000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Business Partner",
+      "business_sector": "Transportation And Storage",
+      "number_of_employees": 4,
+      "business_location": "KAYONZA",
+      "entity_type": "JOINT VENTURE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.534,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 12,
+    "timestamp": "2025-11-28T21:37:29.265407",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1000000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Business Partner",
+      "business_sector": "Transportation And Storage",
+      "number_of_employees": 4,
+      "business_location": "KAYONZA",
+      "entity_type": "JOINT VENTURE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.534,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 13,
+    "timestamp": "2025-11-28T21:39:18.184627",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1000000.0,
+      "owner_age": 34,
+      "owner_business_experience": 2,
+      "capital_source": "Microfinance",
+      "business_sector": "Administrative And Support Service Activities",
+      "number_of_employees": 4,
+      "business_location": "HUYE",
+      "entity_type": "INDIVIDUAL",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5686,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 14,
+    "timestamp": "2025-11-28T21:40:03.928356",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 20000000.0,
+      "owner_age": 45,
+      "owner_business_experience": 5,
+      "capital_source": "Business Partner",
+      "business_sector": "Accommodation And Food Service Activities",
+      "number_of_employees": 4,
+      "business_location": "KARONGI",
+      "entity_type": "JOINT VENTURE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5639,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 15,
+    "timestamp": "2025-11-28T21:53:02.199940",
+    "prediction_type": "existing_business",
+    "input_data": {
+      "business_capital": 12000000.0,
+      "business_sector": "Agriculture, Forestry And Fishing",
+      "entity_type": "JOINT VENTURE",
+      "business_location": "BURERA",
+      "capital_source": "Venture Capital",
+      "turnover_first_year": 1300000.0,
+      "turnover_second_year": 2000000.0,
+      "turnover_third_year": 3000000.0,
+      "turnover_fourth_year": 4000000.0,
+      "employment_first_year": 2,
+      "employment_second_year": 4,
+      "employment_third_year": 2,
+      "employment_fourth_year": 8
+    },
+    "prediction_result": {
+      "prediction": "Success",
+      "success_probability": 0.7833850979804993,
+      "confidence": 0.7833850979804993,
+      "business_insights": {
+        "revenue_growth_rate": 130.77,
+        "employment_growth": "Increased",
+        "business_scaling": "High_Scaling",
+        "employment_efficiency": 0.769,
+        "revenue_consistency": 0.751,
+        "current_revenue_per_employee": 500000.0,
+        "capital_efficiency": 0.858
+      }
+    }
   }
 ]

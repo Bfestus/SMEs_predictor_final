@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
+import FeedbackForm from '../components/FeedbackForm';
 
 // API Configuration - Local priority with automatic fallback
 const API_CONFIG = {
@@ -1701,6 +1702,9 @@ const PreInvestmentPage = () => {
                 Download Report
               </button>
             </div>
+
+            {/* Feedback Section */}
+            <FeedbackForm predictionType="new_business" />
           </div>
         )}
 

@@ -22,6 +22,8 @@ async function detectAPI() {
 let dashboardData = null;
 let allPredictions = [];
 let filteredPredictions = [];
+let allMessages = [];
+let filteredMessages = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -62,7 +64,8 @@ function switchSection(sectionName) {
             'overview': 'Dashboard Overview',
             'predictions': 'All Predictions',
             'analytics': 'Analytics & Insights',
-            'statistics': 'Detailed Statistics'
+            'statistics': 'Detailed Statistics',
+            'messages': 'User Messages & Feedback'
         };
         document.getElementById('page-title').textContent = titles[sectionName] || 'Dashboard';
         
@@ -73,6 +76,8 @@ function switchSection(sectionName) {
             renderAnalytics();
         } else if (sectionName === 'statistics') {
             loadStatistics();
+        } else if (sectionName === 'messages') {
+            loadMessages();
         }
     }
 }
@@ -89,6 +94,7 @@ async function loadDashboardData() {
         renderSuccessRateChart();
         renderRecentPredictions();
         updateLastUpdated();
+        checkUnreadMessages(); // Check for unread messages
         
         showToast('Dashboard updated successfully', 'success');
     } catch (error) {
@@ -543,4 +549,145 @@ function showToast(message, type = 'success') {
 function updateLastUpdated() {
     const now = new Date().toLocaleString();
     document.getElementById('last-updated').textContent = now;
+}
+
+// ===== MESSAGES FUNCTIONS =====
+
+async function loadMessages() {
+    showLoading(true);
+    try {
+        const response = await fetch(`${API_URL}/admin/messages?limit=100`);
+        const data = await response.json();
+        allMessages = data.messages || [];
+        filteredMessages = [...allMessages];
+        
+        // Update unread count
+        const unreadCount = data.unread || 0;
+        updateUnreadBadge(unreadCount);
+        
+        // Update stats
+        document.getElementById('total-messages').textContent = data.total || 0;
+        document.getElementById('unread-messages').textContent = unreadCount;
+        
+        renderMessages();
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        showToast('Failed to load messages', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function checkUnreadMessages() {
+    try {
+        const response = await fetch(`${API_URL}/admin/messages?limit=1`);
+        const data = await response.json();
+        updateUnreadBadge(data.unread || 0);
+    } catch (error) {
+        console.error('Error checking unread messages:', error);
+    }
+}
+
+function updateUnreadBadge(count) {
+    const badge = document.getElementById('unread-badge');
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function renderMessages() {
+    const container = document.getElementById('messages-list');
+    
+    if (filteredMessages.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No messages found</h3><p>No user feedback yet</p></div>';
+        return;
+    }
+    
+    container.innerHTML = filteredMessages.map(msg => createMessageHTML(msg)).join('');
+}
+
+function createMessageHTML(message) {
+    const isUnread = message.status === 'unread';
+    const timestamp = new Date(message.timestamp).toLocaleString();
+    const predictionTypeLabel = message.prediction_type === 'new_business' ? 'New Business' : 'Existing Business';
+    
+    return `
+        <div class="message-item ${message.status}">
+            <div class="message-header">
+                <div class="message-sender">
+                    <h4>${message.name || 'Anonymous User'}</h4>
+                    <p>${message.email || 'No email provided'}</p>
+                </div>
+                <div class="message-meta">
+                    <span class="message-type-badge ${message.prediction_type}">${predictionTypeLabel}</span>
+                    <div class="message-timestamp">${timestamp}</div>
+                </div>
+            </div>
+            <div class="message-content">
+                <p class="message-text">${message.message}</p>
+            </div>
+            <div class="message-actions">
+                ${isUnread ? `
+                    <button class="message-action-btn mark-read" onclick="markAsRead(${message.id})">
+                        <i class="fas fa-check"></i> Mark as Read
+                    </button>
+                ` : `
+                    <span style="font-size: 12px; color: var(--success-color);">
+                        <i class="fas fa-check-circle"></i> Read
+                    </span>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+async function markAsRead(messageId) {
+    try {
+        const response = await fetch(`${API_URL}/admin/messages/${messageId}/read`, {
+            method: 'PATCH'
+        });
+        
+        if (response.ok) {
+            showToast('Message marked as read', 'success');
+            loadMessages(); // Reload messages
+        } else {
+            showToast('Failed to update message', 'error');
+        }
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        showToast('Error updating message', 'error');
+    }
+}
+
+function filterMessages() {
+    const filterValue = document.getElementById('message-filter').value;
+    
+    if (filterValue === 'all') {
+        filteredMessages = [...allMessages];
+    } else {
+        filteredMessages = allMessages.filter(msg => msg.status === filterValue);
+    }
+    
+    renderMessages();
+}
+
+function searchMessages() {
+    const searchTerm = document.getElementById('search-messages').value.toLowerCase();
+    const filterValue = document.getElementById('message-filter').value;
+    
+    filteredMessages = allMessages.filter(msg => {
+        const matchesFilter = filterValue === 'all' || msg.status === filterValue;
+        const matchesSearch = searchTerm === '' || 
+            (msg.name && msg.name.toLowerCase().includes(searchTerm)) ||
+            (msg.email && msg.email.toLowerCase().includes(searchTerm)) ||
+            msg.message.toLowerCase().includes(searchTerm) ||
+            msg.prediction_type.includes(searchTerm);
+        
+        return matchesFilter && matchesSearch;
+    });
+    
+    renderMessages();
 }
