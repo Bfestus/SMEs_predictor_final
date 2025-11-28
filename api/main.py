@@ -14,6 +14,35 @@ import json
 from datetime import datetime
 import shap
 
+# Prediction tracking file path
+PREDICTIONS_LOG_FILE = "predictions_log.json"
+
+def log_prediction(prediction_type: str, input_data: dict, prediction_result: dict):
+    """Log prediction to JSON file for admin tracking"""
+    try:
+        # Load existing logs
+        if os.path.exists(PREDICTIONS_LOG_FILE):
+            with open(PREDICTIONS_LOG_FILE, 'r') as f:
+                logs = json.load(f)
+        else:
+            logs = []
+        
+        # Create new log entry
+        log_entry = {
+            "id": len(logs) + 1,
+            "timestamp": datetime.now().isoformat(),
+            "prediction_type": prediction_type,  # "new_business" or "existing_business"
+            "input_data": input_data,
+            "prediction_result": prediction_result
+        }
+        
+        # Append and save
+        logs.append(log_entry)
+        with open(PREDICTIONS_LOG_FILE, 'w') as f:
+            json.dump(logs, f, indent=2)
+    except Exception as e:
+        print(f"Error logging prediction: {e}")
+
 app = FastAPI(
     title="Combined SME Success Predictor API",
     description="""
@@ -727,7 +756,8 @@ async def predict_sme_success(business_data: BusinessData):
         # Generate recommendations
         recommendations = generate_new_business_recommendations(data_dict, success_probability, processed_data)
         
-        return PredictionResponse(
+        # Prepare response
+        response = PredictionResponse(
             success=True,
             prediction=int(prediction),
             prediction_label="Successful" if prediction == 1 else "Unsuccessful",
@@ -735,6 +765,20 @@ async def predict_sme_success(business_data: BusinessData):
             confidence_level=confidence_level,
             recommendations=recommendations
         )
+        
+        # Log prediction
+        log_prediction(
+            prediction_type="new_business",
+            input_data=data_dict,
+            prediction_result={
+                "prediction": int(prediction),
+                "prediction_label": "Successful" if prediction == 1 else "Unsuccessful",
+                "success_probability": round(success_probability, 4),
+                "confidence_level": confidence_level
+            }
+        )
+        
+        return response
         
     except Exception as e:
         return PredictionResponse(
@@ -853,7 +897,7 @@ async def predict_existing_business_success(business_data: ExistingBusinessData)
         }
         
         # Prepare response
-        return ExistingBusinessPredictionResponse(
+        response = ExistingBusinessPredictionResponse(
             success=bool(prediction),
             prediction=prediction_label,
             success_probability=float(success_probability),
@@ -864,6 +908,20 @@ async def predict_existing_business_success(business_data: ExistingBusinessData)
             model_version=model_metadata.get('version', MODEL_VERSION) if model_metadata else MODEL_VERSION,
             timestamp=datetime.now().isoformat()
         )
+        
+        # Log prediction
+        log_prediction(
+            prediction_type="existing_business",
+            input_data=business_data.dict(),
+            prediction_result={
+                "prediction": prediction_label,
+                "success_probability": float(success_probability),
+                "confidence": float(confidence),
+                "business_insights": business_insights
+            }
+        )
+        
+        return response
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
@@ -926,6 +984,179 @@ async def get_existing_business_sample():
         "description": "Sample data for testing existing business prediction with 4-year historical data",
         "usage": "POST this data to /predict-existing-business endpoint"
     }
+
+# ===== ADMIN DASHBOARD ENDPOINTS =====
+
+@app.get("/admin/dashboard", tags=["Admin"])
+async def get_admin_dashboard():
+    """Get comprehensive admin dashboard statistics"""
+    try:
+        if not os.path.exists(PREDICTIONS_LOG_FILE):
+            return {
+                "total_predictions": 0,
+                "new_business_predictions": 0,
+                "existing_business_predictions": 0,
+                "success_rate_new": 0,
+                "success_rate_existing": 0,
+                "predictions_today": 0,
+                "recent_predictions": [],
+                "message": "No predictions logged yet"
+            }
+        
+        with open(PREDICTIONS_LOG_FILE, 'r') as f:
+            logs = json.load(f)
+        
+        # Calculate statistics
+        total_predictions = len(logs)
+        new_business_count = sum(1 for log in logs if log["prediction_type"] == "new_business")
+        existing_business_count = sum(1 for log in logs if log["prediction_type"] == "existing_business")
+        
+        # Calculate success rates
+        new_success = sum(1 for log in logs if log["prediction_type"] == "new_business" and 
+                         log["prediction_result"].get("prediction") == 1)
+        existing_success = sum(1 for log in logs if log["prediction_type"] == "existing_business" and 
+                              log["prediction_result"].get("prediction") == "Success")
+        
+        success_rate_new = round((new_success / new_business_count * 100), 2) if new_business_count > 0 else 0
+        success_rate_existing = round((existing_success / existing_business_count * 100), 2) if existing_business_count > 0 else 0
+        
+        # Predictions today
+        today = datetime.now().date().isoformat()
+        predictions_today = sum(1 for log in logs if log["timestamp"].startswith(today))
+        
+        # Get recent predictions (last 10)
+        recent_predictions = logs[-10:][::-1]  # Last 10 in reverse order
+        
+        # Predictions by date (last 7 days)
+        from collections import defaultdict
+        predictions_by_date = defaultdict(int)
+        for log in logs:
+            date = log["timestamp"].split("T")[0]
+            predictions_by_date[date] += 1
+        
+        return {
+            "total_predictions": total_predictions,
+            "new_business_predictions": new_business_count,
+            "existing_business_predictions": existing_business_count,
+            "success_rate_new": success_rate_new,
+            "success_rate_existing": success_rate_existing,
+            "predictions_today": predictions_today,
+            "predictions_by_date": dict(sorted(predictions_by_date.items())[-7:]),
+            "recent_predictions": recent_predictions,
+            "last_updated": datetime.now().isoformat()
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching dashboard data: {str(e)}")
+
+@app.get("/admin/predictions", tags=["Admin"])
+async def get_all_predictions(limit: int = 50, prediction_type: Optional[str] = None):
+    """Get all logged predictions with optional filtering"""
+    try:
+        if not os.path.exists(PREDICTIONS_LOG_FILE):
+            return {
+                "total": 0,
+                "predictions": [],
+                "message": "No predictions logged yet"
+            }
+        
+        with open(PREDICTIONS_LOG_FILE, 'r') as f:
+            logs = json.load(f)
+        
+        # Filter by prediction type if specified
+        if prediction_type:
+            logs = [log for log in logs if log["prediction_type"] == prediction_type]
+        
+        # Apply limit and reverse order (newest first)
+        limited_logs = logs[-limit:][::-1]
+        
+        return {
+            "total": len(logs),
+            "returned": len(limited_logs),
+            "predictions": limited_logs,
+            "filters": {"prediction_type": prediction_type, "limit": limit}
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching predictions: {str(e)}")
+
+@app.get("/admin/stats", tags=["Admin"])
+async def get_prediction_stats():
+    """Get detailed prediction statistics"""
+    try:
+        if not os.path.exists(PREDICTIONS_LOG_FILE):
+            return {"message": "No predictions logged yet"}
+        
+        with open(PREDICTIONS_LOG_FILE, 'r') as f:
+            logs = json.load(f)
+        
+        # Statistics by prediction type
+        stats = {
+            "new_business": {
+                "total": 0,
+                "successful": 0,
+                "unsuccessful": 0,
+                "avg_success_probability": 0,
+                "high_confidence": 0,
+                "medium_confidence": 0,
+                "low_confidence": 0
+            },
+            "existing_business": {
+                "total": 0,
+                "successful": 0,
+                "unsuccessful": 0,
+                "avg_success_probability": 0,
+                "avg_confidence": 0
+            }
+        }
+        
+        # Process new business predictions
+        new_business_logs = [log for log in logs if log["prediction_type"] == "new_business"]
+        if new_business_logs:
+            stats["new_business"]["total"] = len(new_business_logs)
+            stats["new_business"]["successful"] = sum(1 for log in new_business_logs if log["prediction_result"].get("prediction") == 1)
+            stats["new_business"]["unsuccessful"] = sum(1 for log in new_business_logs if log["prediction_result"].get("prediction") == 0)
+            
+            success_probs = [log["prediction_result"].get("success_probability", 0) for log in new_business_logs]
+            stats["new_business"]["avg_success_probability"] = round(sum(success_probs) / len(success_probs), 4)
+            
+            stats["new_business"]["high_confidence"] = sum(1 for log in new_business_logs if log["prediction_result"].get("confidence_level") == "High")
+            stats["new_business"]["medium_confidence"] = sum(1 for log in new_business_logs if log["prediction_result"].get("confidence_level") == "Medium")
+            stats["new_business"]["low_confidence"] = sum(1 for log in new_business_logs if log["prediction_result"].get("confidence_level") == "Low")
+        
+        # Process existing business predictions
+        existing_business_logs = [log for log in logs if log["prediction_type"] == "existing_business"]
+        if existing_business_logs:
+            stats["existing_business"]["total"] = len(existing_business_logs)
+            stats["existing_business"]["successful"] = sum(1 for log in existing_business_logs if log["prediction_result"].get("prediction") == "Success")
+            stats["existing_business"]["unsuccessful"] = sum(1 for log in existing_business_logs if log["prediction_result"].get("prediction") == "Failure")
+            
+            success_probs = [log["prediction_result"].get("success_probability", 0) for log in existing_business_logs]
+            stats["existing_business"]["avg_success_probability"] = round(sum(success_probs) / len(success_probs), 4)
+            
+            confidences = [log["prediction_result"].get("confidence", 0) for log in existing_business_logs]
+            stats["existing_business"]["avg_confidence"] = round(sum(confidences) / len(confidences), 4)
+        
+        return {
+            "total_predictions": len(logs),
+            "statistics": stats,
+            "generated_at": datetime.now().isoformat()
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating statistics: {str(e)}")
+
+@app.delete("/admin/predictions/clear", tags=["Admin"])
+async def clear_prediction_logs():
+    """Clear all prediction logs (use with caution!)"""
+    try:
+        if os.path.exists(PREDICTIONS_LOG_FILE):
+            os.remove(PREDICTIONS_LOG_FILE)
+            return {"message": "Prediction logs cleared successfully", "cleared_at": datetime.now().isoformat()}
+        else:
+            return {"message": "No prediction logs to clear"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing logs: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

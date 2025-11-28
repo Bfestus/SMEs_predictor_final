@@ -1,0 +1,208 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2025-11-28T18:11:34.808305",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1200000.0,
+      "owner_age": 30,
+      "owner_business_experience": 7,
+      "capital_source": "Personal Savings",
+      "business_sector": "Manufacturing",
+      "number_of_employees": 0,
+      "business_location": "RULINDO",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5525,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 2,
+    "timestamp": "2025-11-28T18:11:37.007975",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1200000.0,
+      "owner_age": 30,
+      "owner_business_experience": 7,
+      "capital_source": "Personal Savings",
+      "business_sector": "Manufacturing",
+      "number_of_employees": 0,
+      "business_location": "RULINDO",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5525,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 3,
+    "timestamp": "2025-11-28T18:12:01.901119",
+    "prediction_type": "existing_business",
+    "input_data": {
+      "business_capital": 25000000.0,
+      "business_sector": "Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles",
+      "entity_type": "PRIVATE CORPORATION",
+      "business_location": "GASABO",
+      "capital_source": "Bank Loan",
+      "turnover_first_year": 12000000.0,
+      "turnover_second_year": 18000000.0,
+      "turnover_third_year": 24000000.0,
+      "turnover_fourth_year": 30000000.0,
+      "employment_first_year": 5,
+      "employment_second_year": 8,
+      "employment_third_year": 12,
+      "employment_fourth_year": 15
+    },
+    "prediction_result": {
+      "prediction": "Success",
+      "success_probability": 0.9965450167655945,
+      "confidence": 0.9965450167655945,
+      "business_insights": {
+        "revenue_growth_rate": 100.0,
+        "employment_growth": "Increased",
+        "business_scaling": "High_Scaling",
+        "employment_efficiency": 0.833,
+        "revenue_consistency": 0.786,
+        "current_revenue_per_employee": 2000000.0,
+        "capital_efficiency": 3.36
+      }
+    }
+  },
+  {
+    "id": 4,
+    "timestamp": "2025-11-28T20:36:12.839683",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 1200000.0,
+      "owner_age": 30,
+      "owner_business_experience": 7,
+      "capital_source": "Personal Savings",
+      "business_sector": "Manufacturing",
+      "number_of_employees": 0,
+      "business_location": "RULINDO",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 0
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5525,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 5,
+    "timestamp": "2025-11-28T20:36:51.677311",
+    "prediction_type": "existing_business",
+    "input_data": {
+      "business_capital": 25000000.0,
+      "business_sector": "Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles",
+      "entity_type": "PRIVATE CORPORATION",
+      "business_location": "GASABO",
+      "capital_source": "Bank Loan",
+      "turnover_first_year": 12000000.0,
+      "turnover_second_year": 18000000.0,
+      "turnover_third_year": 24000000.0,
+      "turnover_fourth_year": 30000000.0,
+      "employment_first_year": 5,
+      "employment_second_year": 8,
+      "employment_third_year": 12,
+      "employment_fourth_year": 15
+    },
+    "prediction_result": {
+      "prediction": "Success",
+      "success_probability": 0.9965450167655945,
+      "confidence": 0.9965450167655945,
+      "business_insights": {
+        "revenue_growth_rate": 100.0,
+        "employment_growth": "Increased",
+        "business_scaling": "High_Scaling",
+        "employment_efficiency": 0.833,
+        "revenue_consistency": 0.786,
+        "current_revenue_per_employee": 2000000.0,
+        "capital_efficiency": 3.36
+      }
+    }
+  },
+  {
+    "id": 6,
+    "timestamp": "2025-11-28T20:39:30.908783",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 10000000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Bank Loan",
+      "business_sector": "Administrative And Support Service Activities",
+      "number_of_employees": 4,
+      "business_location": "KARONGI",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 1
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5553,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 7,
+    "timestamp": "2025-11-28T20:39:40.454036",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 100000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Bank Loan",
+      "business_sector": "Administrative And Support Service Activities",
+      "number_of_employees": 4,
+      "business_location": "KARONGI",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 1
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.5553,
+      "confidence_level": "Low"
+    }
+  },
+  {
+    "id": 8,
+    "timestamp": "2025-11-28T20:39:49.670309",
+    "prediction_type": "new_business",
+    "input_data": {
+      "business_capital": 100000.0,
+      "owner_age": 34,
+      "owner_business_experience": 3,
+      "capital_source": "Bank Loan",
+      "business_sector": "Administrative And Support Service Activities",
+      "number_of_employees": 0,
+      "business_location": "KARONGI",
+      "entity_type": "COOPERATIVE",
+      "owner_gender": "M",
+      "education_level_numeric": 1
+    },
+    "prediction_result": {
+      "prediction": 1,
+      "prediction_label": "Successful",
+      "success_probability": 0.6039,
+      "confidence_level": "Medium"
+    }
+  }
+]
